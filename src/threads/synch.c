@@ -384,11 +384,34 @@ void down_read(struct rw_semaphore* rwsema)
 }
 void up_write(struct rw_semaphore* rwsema)
 {
-	return;
+  intr_disable();
+	ASSERT(rwsema->writer != NULL);
+  rwsema->writer = NULL;
+  if (!list_empty(&rwsema->write_waiters)) {
+    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
+    struct thread* t = list_entry(e, struct thread, allelem);
+    rwsema->writer = t;
+    thread_unblock(t);
+  } else if (!list_empty(&rwsema->read_waiters)) {
+    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
+    struct thread* t = list_entry(e, struct thread, allelem);
+    rwsema->rcount = 1;
+    thread_unblock(t);
+  }
+  intr_enable();
 }
 void up_read(struct rw_semaphore* rwsema)
 {
-	return;
+	intr_disable();
+	ASSERT(rwsema->rcount > 0);
+  --rwsema->rcount;
+  if (rwsema->rcount == 0 && !list_empty(&rwsema->write_waiters)) {
+    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
+    struct thread* t = list_entry(e, struct thread, allelem);
+    rwsema->writer = t;
+    thread_unblock(t);
+  }
+  intr_enable();
 }
 
 void seqlock_init(struct seqlock* seqlock)
