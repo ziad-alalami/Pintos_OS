@@ -337,17 +337,50 @@ cond_broadcast (struct condition *cond, struct lock *lock)
     cond_signal (cond, lock);
 }
 
+
+/*Add the writer thread to the writer list and block the thread */
+void add_writer_list(struct rw_semaphore* rwsema)
+{
+	list_push_back(rwsema->writer_waiters,thread_current());
+	thread_block();
+}
+
+/* Add the reader thread to the reader list and block the thread */
+void add_reader_list(struct rw_semaphore* rwsema)
+{
+	list_push_back(rwsema->reader_waiters,thread_current());
+	thread_block();
+}
+
+/* Initialize the read_write semapgore by initalizing the lists, pointing writer to null and reader count to zero*/
 void rwsema_init(struct rw_semaphore* rwsema)
 {
-	return;
+	rwsema->rcount = 0;
+	list_init(&rwsema->read_waiters);
+	list_init(&rwsema->write_waiters);
+	rwsema->writer = NULL;
 }
+
+/* This function acquires exclusive lock for a writer if there are no readers orwriters using the resources.*/
 void down_write(struct rw_semaphore* rwsema)
 {
-	return;
+	intr_disable();
+	if(rwsema->rcount == 0 && rwsema->writer == NULL)
+		rwsema->writer = thread_current();
+	else
+		add_writer_list(rwsema);
+	intr_enable();
+
 }
+/* This function acquires shared lock for a reader or places it on the reader_list if there is a writer*/
 void down_read(struct rw_semaphore* rwsema)
 {
-	return;
+	intr_disable();
+	if(rwsema->writer != NULL)
+		add_reader_list(rwsema);
+	else
+		rwsema->rcount++;
+	intr_enable();
 }
 void up_write(struct rw_semaphore* rwsema)
 {
