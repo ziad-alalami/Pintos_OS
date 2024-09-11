@@ -385,7 +385,7 @@ void down_read(struct rw_semaphore* rwsema)
 void up_write(struct rw_semaphore* rwsema)
 {
   intr_disable();
-	ASSERT(rwsema->writer != NULL);
+	ASSERT(rwsema->writer == thread_current);
   rwsema->writer = NULL;
   if (!list_empty(&rwsema->write_waiters)) {
     struct list_elem* e = list_pop_front(&rwsema->write_waiters);
