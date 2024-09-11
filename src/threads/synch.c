@@ -364,27 +364,30 @@ void rwsema_init(struct rw_semaphore* rwsema)
 /* This function acquires exclusive lock for a writer if there are no readers orwriters using the resources.*/
 void down_write(struct rw_semaphore* rwsema)
 {
-	intr_disable();
+	enum intr_level old_level;
+  old_level = intr_disable();
 	if(rwsema->rcount == 0 && rwsema->writer == NULL)
 		rwsema->writer = thread_current();
 	else
 		add_writer_list(rwsema);
-	intr_enable();
+	intr_set_level(old_level);
 
 }
 /* This function acquires shared lock for a reader or places it on the reader_list if there is a writer*/
 void down_read(struct rw_semaphore* rwsema)
 {
-	intr_disable();
+	enum intr_level old_level;
+  old_level = intr_disable();
 	if(rwsema->writer != NULL)
 		add_reader_list(rwsema);
 	else
 		rwsema->rcount++;
-	intr_enable();
+	intr_set_level(old_level);
 }
 void up_write(struct rw_semaphore* rwsema)
 {
-  intr_disable();
+  enum intr_level old_level;
+  old_level = intr_disable();
 	ASSERT(rwsema->writer == thread_current);
   rwsema->writer = NULL;
   if (!list_empty(&rwsema->write_waiters)) {
@@ -398,11 +401,12 @@ void up_write(struct rw_semaphore* rwsema)
     ++rwsema->rcount;
     thread_unblock(t);
   }
-  intr_enable();
+  intr_set_level(old_level);
 }
 void up_read(struct rw_semaphore* rwsema)
 {
-	intr_disable();
+  enum intr_level old_level;
+  old_level = intr_disable();
 	ASSERT(rwsema->rcount > 0);
   --rwsema->rcount;
   if (rwsema->rcount == 0 && !list_empty(&rwsema->write_waiters)) {
@@ -411,7 +415,7 @@ void up_read(struct rw_semaphore* rwsema)
     rwsema->writer = t;
     thread_unblock(t);
   }
-  intr_enable();
+  intr_set_level(old_level);
 }
 
 void seqlock_init(struct seqlock* seqlock)

@@ -258,14 +258,12 @@ void thread_sleep(int64_t ticks)
   /* When you manipulate thread list, disable interrupt! */
   struct thread *curr = thread_current();
   ASSERT (curr != idle_thread);
-  intr_disable();
+  enum intr_level old_level;
+  old_level = intr_disable();
   curr->wakeup_tick = ticks;
   sleep_list_add(curr);
   thread_block();
-  intr_enable();
-
-    
-
+  intr_set_level(old_level);
 }
 
 /* This method adds a running thread to the tail of a sleep queue */
