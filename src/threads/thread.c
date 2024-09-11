@@ -24,6 +24,10 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/*List of processes in THREAD_BLOCKED state, that is, processes
+ * that are sleep and waiting to be ready again */
+static struct list sleep_list;
+
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
@@ -93,7 +97,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
+  list_init (&sleep_list);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -242,6 +246,79 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
+
+void thread_sleep(int64_t ticks)
+{
+  
+  /* if the current thread is not idle thread,
+ change the state of the caller thread to BLOCKED,
+ store the local tick to wake up,
+ update the global tick if necessary,
+ and call schedule() */
+  /* When you manipulate thread list, disable interrupt! */
+  struct thread *curr = thread_current();
+  ASSERT (curr != idle_thread);
+  intr_disable();
+  curr->wakeup_tick = ticks;
+  sleep_list_add(curr);
+  thread_block();
+  intr_enable();
+
+    
+
+}
+
+/* This method adds a running thread to the tail of a sleep queue */
+void sleep_list_add(struct thread *curr)
+{
+ struct list_elem *elem = &curr->allelem;
+ list_push_back(&sleep_list,elem);
+}
+
+/*This method is called when the min number of ticks reaches zero
+ * to move a thread to the ready_list */
+void wakeup()
+{
+ ASSERT(intr_get_level() == INTR_OFF);
+ struct list_elem *e;
+ struct list_elem *next;
+ for(e = list_begin(&sleep_list); e != list_end(&sleep_list);e = list_next(e))
+ {
+	 struct thread *t = list_entry(e, struct thread, allelem);
+	 if(timer_ticks() >= t->wakeup_tick)
+	{
+		thread_unblock(t);
+		list_remove(e);
+		
+	}
+
+ }
+}
+
+/* This function gives us the minimum number of ticks available in the sleep queue
+	so that we can run the check_ready only when min_ sleep_ticks == timer_ticks() */
+int64_t min_sleep_ticks()
+{
+	struct list_elem *min_elem = list_begin(&sleep_list);
+	int64_t min;
+	int64_t comparison_tick;
+	struct list_elem *e;
+	if(min_elem != list_end(&sleep_list))
+	{
+	 min = list_entry(min_elem,struct thread, allelem)->wakeup_tick;
+	 for(e = list_begin(&sleep_list); e != list_end(&sleep_list); e = list_next(e))
+		{
+		 comparison_tick = list_entry(e,struct thread, allelem)->wakeup_tick;
+		 if(comparison_tick < min)
+		 	min = comparison_tick;
+		}
+	 return min;
+	}
+        return -1;
+
+}
+
+
 
 /* Returns the name of the running thread. */
 const char *

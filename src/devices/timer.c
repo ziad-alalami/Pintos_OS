@@ -20,6 +20,9 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
+/* Minimum number of ticks in sleep queue */
+static int64_t min_ticks;
+
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -90,10 +93,11 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
-
+  int64_t end = start + ticks;
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  if (timer_ticks() < end)
+      thread_sleep(end);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -170,8 +174,24 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  int64_t temp_ticks;	
   ticks++;
   thread_tick ();
+  if(min_ticks > 0)
+	min_ticks--;
+
+  else if(min_ticks == 0)
+  {
+
+    wakeup();
+    temp_ticks = min_sleep_ticks();
+
+    if(temp_ticks != -1)
+	    min_ticks = temp_ticks - timer_ticks();
+
+  }
+
+  
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

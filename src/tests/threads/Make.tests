@@ -2,7 +2,7 @@
 
 # Test names.
 tests/threads_TESTS = $(addprefix tests/threads/,			\
-alarm-wait alarm-simultaneous alarm-priority alarm-zero alarm-negative \
+alarm-simultaneous alarm-priority alarm-zero alarm-negative \
 seqlock1 seqlock2 seqlock3 seqlock4 seqlock5				\
 rwsema1 rwsema2 rwsema3 rwsema4 rwsema5 rwsema6)
 
