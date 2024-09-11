@@ -420,21 +420,40 @@ void up_read(struct rw_semaphore* rwsema)
 
 void seqlock_init(struct seqlock* seqlock)
 {
-	return;
+	seqlock->sequence = 0;
+  seqlock->writer = NULL;
 }
 int64_t read_seqlock_begin(struct seqlock* seqlock)
 {
-	return 0;
+	return seqlock->sequence;
 }
 bool read_seqretry(struct seqlock* seqlock, int64_t sequence)
 {
-	return false;
+	return sequence % 2 == 1 || sequence != seqlock->sequence;
 }
 void write_seqlock(struct seqlock* seqlock)
 {
-	return;
+  ASSERT(seqlock->writer == NULL);
+  // TODO replace this assert with logic to handle existing writer
+  // once Piazza question is answered
+
+  enum intr_level old_level = intr_disable();
+
+  ++seqlock->sequence;
+  seqlock->writer = thread_current();
+	
+  intr_set_level(old_level);         
 }
 void write_sequnlock(struct seqlock* seqlock)
 {
-	return;
+  ASSERT(seqlock->writer == thread_current);
+
+	enum intr_level old_level = intr_disable();
+	
+  ++seqlock->sequence;
+  seqlock->writer = NULL;
+
+  // TODO add logic to unblock a waiting writer once Piazza post is answered
+
+  intr_set_level(old_level);
 }
