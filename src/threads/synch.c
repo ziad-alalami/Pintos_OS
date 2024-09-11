@@ -341,14 +341,14 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 /*Add the writer thread to the writer list and block the thread */
 void add_writer_list(struct rw_semaphore* rwsema)
 {
-	list_push_back(rwsema->writer_waiters,thread_current());
+	list_push_back(&rwsema->write_waiters, &thread_current()->allelem);
 	thread_block();
 }
 
 /* Add the reader thread to the reader list and block the thread */
 void add_reader_list(struct rw_semaphore* rwsema)
 {
-	list_push_back(rwsema->reader_waiters,thread_current());
+	list_push_back(&rwsema->read_waiters, &thread_current()->allelem);
 	thread_block();
 }
 
@@ -393,9 +393,9 @@ void up_write(struct rw_semaphore* rwsema)
     rwsema->writer = t;
     thread_unblock(t);
   } else if (!list_empty(&rwsema->read_waiters)) {
-    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
+    struct list_elem* e = list_pop_front(&rwsema->read_waiters);
     struct thread* t = list_entry(e, struct thread, allelem);
-    rwsema->rcount = 1;
+    ++rwsema->rcount;
     thread_unblock(t);
   }
   intr_enable();
