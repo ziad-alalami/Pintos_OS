@@ -337,7 +337,7 @@ cond_broadcast (struct condition *cond, struct lock *lock)
     cond_signal (cond, lock);
 }
 
-/* Initialize the read_write semapgore by initalizing the lists, pointing writer to null and reader count to zero*/
+/* Initialize the read_write semaphore by initalizing the lists, pointing writer to null and reader count to zero*/
 void rwsema_init(struct rw_semaphore* rwsema)
 {
 	rwsema->rcount = 0;
@@ -346,7 +346,9 @@ void rwsema_init(struct rw_semaphore* rwsema)
 	rwsema->writer = NULL;
 }
 
-/* This function acquires exclusive lock for a writer if there are no readers orwriters using the resources.*/
+/* This function acquires exclusive lock access for a writer if there are no readers or
+ * writers using the resources. Otherwise, puts the writer in a waiting list.
+ */
 void down_write(struct rw_semaphore* rwsema)
 {
 	enum intr_level old_level = intr_disable();
@@ -372,6 +374,10 @@ void down_read(struct rw_semaphore* rwsema)
   }
 	intr_set_level(old_level);
 }
+/*
+ * This function releases exclusive write access to the lock, and then gives access to the
+ * next writer waiting if one exists, or else to any waiting readers.
+ */
 void up_write(struct rw_semaphore* rwsema)
 {
   enum intr_level old_level = intr_disable();
@@ -388,6 +394,10 @@ void up_write(struct rw_semaphore* rwsema)
   }
   intr_set_level(old_level);
 }
+/*
+ * This function removes shared access to the lock from one reader. If there are no
+ * more readers, and there is a waiting writer, that writer will be given access.
+ */
 void up_read(struct rw_semaphore* rwsema)
 {
   enum intr_level old_level = intr_disable();
@@ -400,20 +410,36 @@ void up_read(struct rw_semaphore* rwsema)
   }
   intr_set_level(old_level);
 }
-
+/*
+ * This function initializes the seqlock by setting the sequence to 0 and the writer to NULL.
+ */
 void seqlock_init(struct seqlock* seqlock)
 {
 	seqlock->sequence = 0;
   seqlock->writer = NULL;
 }
+/*
+ * This function returns the current sequence of the seqlock for a reader to begin reading
+ * so that they can compare the value later.
+ */
 int64_t read_seqlock_begin(struct seqlock* seqlock)
 {
 	return seqlock->sequence;
 }
+/*
+ * This function checks if a reader should retry reading the seqlock. The reader should retry
+ * if the sequence has changed since it started reading, or it started reading in the
+ * middle of a write (the sequence was odd).
+ */
 bool read_seqretry(struct seqlock* seqlock, int64_t sequence)
 {
 	return sequence % 2 == 1 || sequence != seqlock->sequence;
 }
+/*
+ * This function grants exclusive write access for the seqlock, incrementing the
+ * sequence to an odd value. If the seqlock is currently held by another writer,
+ * we bust wait until it is free.
+ */
 void write_seqlock(struct seqlock* seqlock)
 {
   // Busy wait until seqlock can be acquired
@@ -429,6 +455,11 @@ void write_seqlock(struct seqlock* seqlock)
 	
   intr_set_level(old_level);         
 }
+/*
+ * This function relinquishes exclusive write access of the seqlock by incrementing the
+ * sequence to the next even number. Must be called by the thread owning write access
+ * to the seqlock.
+ */
 void write_sequnlock(struct seqlock* seqlock)
 {
   ASSERT(seqlock->writer == thread_current());
