@@ -12,6 +12,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -280,7 +281,6 @@ void wakeup()
 {
  ASSERT(intr_get_level() == INTR_OFF);
  struct list_elem *e;
- struct list_elem *next;
  for(e = list_begin(&sleep_list); e != list_end(&sleep_list);e = list_next(e))
  {
 	 struct thread *t = list_entry(e, struct thread, allelem);
@@ -288,9 +288,7 @@ void wakeup()
 	{
 		thread_unblock(t);
 		list_remove(e);
-		
 	}
-
  }
 }
 

@@ -388,7 +388,7 @@ void up_write(struct rw_semaphore* rwsema)
 {
   enum intr_level old_level;
   old_level = intr_disable();
-	ASSERT(rwsema->writer == thread_current);
+	ASSERT(rwsema->writer == thread_current());
   rwsema->writer = NULL;
   if (!list_empty(&rwsema->write_waiters)) {
     struct list_elem* e = list_pop_front(&rwsema->write_waiters);
@@ -448,7 +448,7 @@ void write_seqlock(struct seqlock* seqlock)
 }
 void write_sequnlock(struct seqlock* seqlock)
 {
-  ASSERT(seqlock->writer == thread_current);
+  ASSERT(seqlock->writer == thread_current());
 
 	enum intr_level old_level = intr_disable();
 	
