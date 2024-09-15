@@ -119,7 +119,7 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
-int64_t min_sleep_ticks(void);
+int64_t get_min_wakeup_tick(void);
 void wakeup(void);
 void sleep_list_add(struct thread *curr);
 void thread_sleep(int64_t ticks);
