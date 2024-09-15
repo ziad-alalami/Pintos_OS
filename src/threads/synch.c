@@ -337,21 +337,6 @@ cond_broadcast (struct condition *cond, struct lock *lock)
     cond_signal (cond, lock);
 }
 
-
-/*Add the writer thread to the writer list and block the thread */
-void add_writer_list(struct rw_semaphore* rwsema)
-{
-	list_push_back(&rwsema->write_waiters, &thread_current()->allelem);
-	thread_block();
-}
-
-/* Add the reader thread to the reader list and block the thread */
-void add_reader_list(struct rw_semaphore* rwsema)
-{
-	list_push_back(&rwsema->read_waiters, &thread_current()->allelem);
-	thread_block();
-}
-
 /* Initialize the read_write semapgore by initalizing the lists, pointing writer to null and reader count to zero*/
 void rwsema_init(struct rw_semaphore* rwsema)
 {
@@ -364,40 +349,40 @@ void rwsema_init(struct rw_semaphore* rwsema)
 /* This function acquires exclusive lock for a writer if there are no readers orwriters using the resources.*/
 void down_write(struct rw_semaphore* rwsema)
 {
-	enum intr_level old_level;
-  old_level = intr_disable();
-	if(rwsema->rcount == 0 && rwsema->writer == NULL)
+	enum intr_level old_level = intr_disable();
+	if (rwsema->rcount == 0 && rwsema->writer == NULL) {
 		rwsema->writer = thread_current();
-	else
-		add_writer_list(rwsema);
+  }
+	else {
+		list_push_back(&rwsema->write_waiters, &thread_current()->elem);
+	  thread_block();
+  }
 	intr_set_level(old_level);
-
 }
 /* This function acquires shared lock for a reader or places it on the reader_list if there is a writer*/
 void down_read(struct rw_semaphore* rwsema)
 {
-	enum intr_level old_level;
-  old_level = intr_disable();
-	if(rwsema->writer != NULL)
-		add_reader_list(rwsema);
-	else
-		rwsema->rcount++;
+	enum intr_level old_level = intr_disable();
+	if(rwsema->writer == NULL) {
+		++rwsema->rcount;
+  }
+	else {
+    list_push_back(&rwsema->read_waiters, &thread_current()->elem);
+	  thread_block();
+  }
 	intr_set_level(old_level);
 }
 void up_write(struct rw_semaphore* rwsema)
 {
-  enum intr_level old_level;
-  old_level = intr_disable();
+  enum intr_level old_level = intr_disable();
 	ASSERT(rwsema->writer == thread_current());
   rwsema->writer = NULL;
   if (!list_empty(&rwsema->write_waiters)) {
-    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
-    struct thread* t = list_entry(e, struct thread, allelem);
+    struct thread* t = list_entry(list_pop_front(&rwsema->write_waiters), struct thread, elem);
     rwsema->writer = t;
     thread_unblock(t);
   } else if (!list_empty(&rwsema->read_waiters)) {
-    struct list_elem* e = list_pop_front(&rwsema->read_waiters);
-    struct thread* t = list_entry(e, struct thread, allelem);
+    struct thread* t = list_entry(list_pop_front(&rwsema->read_waiters), struct thread, elem);
     ++rwsema->rcount;
     thread_unblock(t);
   }
@@ -405,13 +390,11 @@ void up_write(struct rw_semaphore* rwsema)
 }
 void up_read(struct rw_semaphore* rwsema)
 {
-  enum intr_level old_level;
-  old_level = intr_disable();
+  enum intr_level old_level = intr_disable();
 	ASSERT(rwsema->rcount > 0);
   --rwsema->rcount;
   if (rwsema->rcount == 0 && !list_empty(&rwsema->write_waiters)) {
-    struct list_elem* e = list_pop_front(&rwsema->write_waiters);
-    struct thread* t = list_entry(e, struct thread, allelem);
+    struct thread* t = list_entry(list_pop_front(&rwsema->write_waiters), struct thread, elem);
     rwsema->writer = t;
     thread_unblock(t);
   }
