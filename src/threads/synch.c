@@ -387,10 +387,12 @@ void up_write(struct rw_semaphore* rwsema)
     struct thread* t = list_entry(list_pop_front(&rwsema->write_waiters), struct thread, elem);
     rwsema->writer = t;
     thread_unblock(t);
-  } else if (!list_empty(&rwsema->read_waiters)) {
-    struct thread* t = list_entry(list_pop_front(&rwsema->read_waiters), struct thread, elem);
-    ++rwsema->rcount;
-    thread_unblock(t);
+  } else {
+    while (!list_empty(&rwsema->read_waiters)) {
+      struct thread* t = list_entry(list_pop_front(&rwsema->read_waiters), struct thread, elem);
+      ++rwsema->rcount;
+      thread_unblock(t);
+    }
   }
   intr_set_level(old_level);
 }
