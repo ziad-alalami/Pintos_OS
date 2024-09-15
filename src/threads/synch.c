@@ -435,7 +435,7 @@ void write_seqlock(struct seqlock* seqlock)
 {
   // Busy wait until seqlock can be acquired
   enum intr_level old_level = intr_disable();
-  while (seqlock->writer == NULL) {
+  while (seqlock->writer != NULL) {
     intr_set_level(old_level);
     thread_yield();
     old_level = intr_disable();
