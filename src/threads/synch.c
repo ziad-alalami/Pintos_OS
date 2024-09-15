@@ -433,11 +433,13 @@ bool read_seqretry(struct seqlock* seqlock, int64_t sequence)
 }
 void write_seqlock(struct seqlock* seqlock)
 {
-  ASSERT(seqlock->writer == NULL);
-  // TODO replace this assert with logic to handle existing writer
-  // once Piazza question is answered
-
+  // Busy wait until seqlock can be acquired
   enum intr_level old_level = intr_disable();
+  while (seqlock->writer == NULL) {
+    intr_set_level(old_level);
+    thread_yield();
+    old_level = intr_disable();
+  }
 
   ++seqlock->sequence;
   seqlock->writer = thread_current();
@@ -452,8 +454,6 @@ void write_sequnlock(struct seqlock* seqlock)
 	
   ++seqlock->sequence;
   seqlock->writer = NULL;
-
-  // TODO add logic to unblock a waiting writer once Piazza post is answered
 
   intr_set_level(old_level);
 }
