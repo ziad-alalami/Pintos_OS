@@ -83,16 +83,21 @@ typedef int tid_t;
 struct thread
   {
     /* Owned by thread.c. */
-    tid_t tid;                          /* Thread identifier. */
+    tid_t tid;   	 		/* Thread identifier. */
+    pid_t pid;				/* Process identifier. */
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int exit_status;
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;		/* Tick till wake up.  */
+    struct list waited_children;	/* List of children already waited on*/ 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    bool is_user; 			/* User thread or not */
+    //====================================================
+    struct semaphore sema;		/*Thread semaphore */
+    struct thread *child_thread;		/* Thread that points to a child thread */    
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

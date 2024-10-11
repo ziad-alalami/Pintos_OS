@@ -159,7 +159,13 @@ init_stack(int argc, char* argv[], void **p) {
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+	struct thread *cur = thread_current();
+
+	sema_down(&(cur->child_thread->sema));
+
+	list_push_front(cur->waited_children, cur->child_thread->elem);
+
+	return cur->child_thread->exit_status;	
 }
 
 /* Free the current process's resources. */

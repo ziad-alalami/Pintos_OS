@@ -112,24 +112,37 @@ void halt()
 void exit(struct intr_frame *f)
 {
 	
-	int status = *(int *) (f->esp + 4);
-
-	//COPY ARGUMENTS TO KERNEL STACK (HOW?)
-
+	int status = *(int *) (f->esp + 4);	
 
 	struct thread *cur = thread_current();
+
+	cur -> stack -= 4;
+	memcpy(stack, &status, sizeof(int));
+
 	thread_exit();
 	printf("%s : exit(%d)\\n", cur->name, status);
-	f->eax = status;
-	
-	
+
+	cur->exit_status = status;
+	sema_up(&(cur -> sema));	
 }
 
 int wait(struct intr_frame *f)
 {
-	//TO DO PART: VALIDATE INPUT
 	pid_t pid = *(pid_t *) (f->esp + 4);
-	//COPY ARGUMENTS TO KERNEL STACK (HOW??)
+	struct thread *cur = thread_current();
+	cur -> stack -= 4;
+	memcpy(stack, &pid, sizeof(pid));
+
+	if(cur->child_thread == NULL)
+		return -1;
+	for(struct list_elem child = list_head(cur -> waited_children), child !=list_tail(cur -> waited_children), child = child -> next)
+		if(cur -> child_thread -> elem  == child)
+		return -1;	
+
+	//Wait for the child process to die and return the status
+	return process_wait(cur->child_thread->tid);
+
+	
 	
 	
 }
