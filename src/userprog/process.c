@@ -26,10 +26,18 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
 tid_t
-process_execute (const char *file_name) 
+process_execute (const char *command_line_input) 
 {
   char *fn_copy;
   tid_t tid;
+
+  // Duplicate command line input as strtok_r
+  // modifies the original string, and we want to
+  // be able to parse it in start_process
+  char* command_line_input_copy = strrdup(command_line_input);
+
+  char* saveptr;
+  char* file_name = strtok_r(command_line_input_copy, " ", saveptr);
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -40,6 +48,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  free(command_line_input_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -48,11 +57,26 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (void *command_line_input_)
 {
-  char *file_name = file_name_;
+  char *command_line_input = command_line_input_;
   struct intr_frame if_;
   bool success;
+
+  char *file_name = NULL;
+  int argc = 0;
+  char **argv = NULL;
+
+  char *saveptr;
+  char *token;
+
+  file_name = strtok_r(command_line_input, " ", saveptr);
+
+  while ((token = strtok_r(NULL, " ", &saveptr)) != NULL) {
+    argv = realloc(argv, sizeof(char*) * (argc + 1));
+    argv[argc] = token;
+    ++argc;
+  }
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -66,6 +90,8 @@ start_process (void *file_name_)
   if (!success) 
     thread_exit ();
 
+  init_stack(argc, argv, &if_.esp);
+  free(argv);
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -74,6 +100,51 @@ start_process (void *file_name_)
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
+}
+
+void
+init_stack(int argc, char* argv[], void **p) {
+  char **new_argv = (char **)malloc((argc + 1) * sizeof(char *));
+
+  // Copy strings in argv to stack
+  for (int i = argc - 1; i >= 0; i--) {
+      int str_len = strlen(argv[i]) + 1;
+
+      // Adjust *p to point to where the string will be pushed
+      *p = (void *)((char *)(*p) - str_len);
+
+      memcpy(*p, argv[i], str_len);
+
+      new_argv[i] = (char *)(*p);
+  }
+
+  // Add padding to nearest 4 bytes
+  uintptr_t stack_addr = (uintptr_t)*p;
+  if (stack_addr % 4 != 0) {
+      int padding = 4 - (stack_addr % 4);
+      *p = (void *)((char *)(*p) - padding);
+  }
+
+  // Null-terminate the new_argv array
+  new_argv[argc] = NULL;
+
+  // Push the new_argv pointers to the stack
+  *p = (void *)((char *)(*p) - ((argc + 1) * sizeof(char *)));
+  memcpy(*p, new_argv, (argc + 1) * sizeof(char *));
+
+  // Push the address of argv in the stack
+  *p = (void *)((char *)(*p) - sizeof(char **));
+  *(char ***) (*p) = (char **)(*p + sizeof(char **));
+
+  // Push argc
+  *p = (void *)((char *)(*p) - sizeof(int));
+  *(int *)(*p) = argc;
+
+  // Push the return address (0)
+  *p = (void *)((char *)(*p) - sizeof(void *));
+  *(void **)(*p) = (void *)0;
+
+  free(new_argv);
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
