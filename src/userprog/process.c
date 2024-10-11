@@ -162,7 +162,7 @@ int process_wait(tid_t child_tid) {
     struct list_elem *e;
 
     for (e = list_begin(&cur->children); e != list_end(&cur->children); e = list_next(e)) {
-        struct thread *child = list_entry(e, struct thread, child_elem);
+        struct thread *child = list_entry(e, struct thread, elem);
         if (child->tid == child_tid) {
             child_thread = child;
             break;
@@ -176,7 +176,7 @@ int process_wait(tid_t child_tid) {
     sema_down(&child_thread->sema);
 
     int exit_status = child_thread->exit_status;
-    list_remove(&child_thread->child_elem);
+    list_remove(&child_thread->elem);
 
     return exit_status;
 }

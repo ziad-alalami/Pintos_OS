@@ -25,7 +25,7 @@ void get_syscall_number(int* value_address)
 {
 	asm volatile("movl (%%esp), %0\n":
 			"=r" (*value)
-			)
+			);
 }
 
 void** return_arguments(struct intr_frame *f, int num_args) {
@@ -59,7 +59,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 	  exit(f);
 
 	case SYS_EXEC:
-	  exec(f);
+	 f->eax = exec(f);
 
 	case SYS_WAIT:
 	 f->eax =  wait(f);
@@ -124,7 +124,7 @@ void exit(struct intr_frame *f)
 	
 }
 
-int wait(struct intr_frame *f)
+int wait_(struct intr_frame *f)
 {
    pid_t pid = *(pid_t *) (f->esp + 4);
 
@@ -157,9 +157,56 @@ int wait(struct intr_frame *f)
     if (child_thread == NULL) 
         return -1;
     
-    	list_push_back(&cur->waited_children, &child_thread->child_elem);	
-	return process_wait(cur->child_thread->tid);	
+    	list_push_back(&cur->waited_children, &child_thread->elem);	
+	return process_wait(child_thread->tid);	
 	
 }
 
+pid_t exec(struct intr_frame *f)
+{
+	//TODO
+	return -1;
+}
+
+bool create(struct intr_frame *f)
+{
+	//TODO
+	return false;
+}
+
+int open(struct intr_frame *f)
+{
+	//TODO
+	return -1;
+}
+
+int filesize(struct intr_frame *f)
+{
+	//TODO
+	return -1;
+}
+
+int write(struct intr_frame *f)
+{
+	//TODO
+	return -1;
+}
+
+void seek(struct intr_frame *f)
+{
+	//TODO
+	return;
+}
+
+unsigned tell(struct intr_frame *f)
+{
+	//TODO
+	return 0;
+}
+
+void close(struct intr_frame *f)
+{
+	//TODO
+	return;
+}
 
