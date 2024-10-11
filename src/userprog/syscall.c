@@ -137,7 +137,7 @@ int wait_(struct intr_frame *f)
   
     struct list_elem *e;
     for (e = list_begin(&cur->waited_children); e != list_end(&cur->waited_children); e = list_next(e)) {
-        struct thread *waited_child = list_entry(e, struct thread, child_elem);
+        struct thread *waited_child = list_entry(e, struct thread, elem);
         
         if (waited_child->pid == pid) {
             return -1;
