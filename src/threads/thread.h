@@ -92,7 +92,7 @@ struct thread
     int64_t wakeup_tick;		/* Tick till wake up.  */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-
+    bool is_user; 			/* User thread or not */
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
