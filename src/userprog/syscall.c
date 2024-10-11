@@ -24,7 +24,7 @@ syscall_init (void)
 void get_syscall_number(int* value_address)
 {
 	asm volatile("movl (%%esp), %0\n":
-			"=r" (*value)
+			"=r" (*value_address)
 			);
 }
 
@@ -47,49 +47,50 @@ void** return_arguments(struct intr_frame *f, int num_args) {
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-
   int syscall_number;
   get_syscall_number(&syscall_number);
   int syscall_output;
-  switch(syscall_number)
+  switch(syscall_number) {
 	case SYS_HALT:
 	  halt();
-
+	  break;
 	case SYS_EXIT:
 	  exit(f);
-
+	  break;
 	case SYS_EXEC:
-	 f->eax = exec(f);
-
+	  f->eax = exec(f);
+	  break;
 	case SYS_WAIT:
-	 f->eax =  wait(f);
-
+	  f->eax = wait(f);
+	  break;
 	case SYS_CREATE:
-	 f->eax =  create(f);
-
+	  f->eax = create(f);
+	  break;
 	case SYS_REMOVE:
-	 f->eax = remove(f);
-
+	  f->eax = remove(f);
+	  break;
 	case SYS_OPEN:
-	 f->eax =  open(f);
-
+	  f->eax = open(f);
+	  break;
 	case SYS_FILESIZE:
-	 f->eax = filesize(f);
-
+	  f->eax = filesize(f);
+	  break;
 	case SYS_READ:
-	 f->eax =  read(f);
-
+	  f->eax = read(f);
+	  break;
 	case SYS_WRITE:
 	  f->eax = write(f);
-
+	  break;
 	case SYS_SEEK:
 	  seek(f);
-
+	  break;
 	case SYS_TELL:
 	  f->eax = tell(f);
-
+	  break;
 	case SYS_CLOSE:
 	  close(f);
+	  break;
+  }
 
   printf ("system call!\n");
   thread_exit ();
@@ -117,7 +118,7 @@ void exit(struct intr_frame *f)
 	struct thread *cur = thread_current();
 
 	cur -> stack -= 4;
-	memcpy(stack, &status, sizeof(int));
+	memcpy(cur->stack, &status, sizeof(int));
 	cur -> exit_status = status;
 	printf("%s: exit(%d)\n", cur->name, status);	
 	thread_exit();
