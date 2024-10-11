@@ -156,17 +156,31 @@ init_stack(int argc, char* argv[], void **p) {
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int
-process_wait (tid_t child_tid UNUSED) 
-{
-	struct thread *cur = thread_current();
+int process_wait(tid_t child_tid) {
+    struct thread *cur = thread_current();
+    struct thread *child_thread = NULL;
+    struct list_elem *e;
 
-	sema_down(&(cur->child_thread->sema));
+    for (e = list_begin(&cur->children); e != list_end(&cur->children); e = list_next(e)) {
+        struct thread *child = list_entry(e, struct thread, child_elem);
+        if (child->tid == child_tid) {
+            child_thread = child;
+            break;
+        }
+    }
 
-	list_push_front(cur->waited_children, cur->child_thread->elem);
+    if (child_thread == NULL) 
+        return -1;
+    
 
-	return cur->child_thread->exit_status;	
+    sema_down(&child_thread->sema);
+
+    int exit_status = child_thread->exit_status;
+    list_remove(&child_thread->child_elem);
+
+    return exit_status;
 }
+
 
 /* Free the current process's resources. */
 void

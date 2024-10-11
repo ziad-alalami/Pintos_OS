@@ -118,32 +118,47 @@ void exit(struct intr_frame *f)
 
 	cur -> stack -= 4;
 	memcpy(stack, &status, sizeof(int));
-
+	cur -> exit_status = status;
+	printf("%s: exit(%d)\n", cur->name, status);	
 	thread_exit();
-	printf("%s : exit(%d)\\n", cur->name, status);
-
-	cur->exit_status = status;
-	sema_up(&(cur -> sema));	
+	
 }
 
 int wait(struct intr_frame *f)
 {
-	pid_t pid = *(pid_t *) (f->esp + 4);
-	struct thread *cur = thread_current();
-	cur -> stack -= 4;
-	memcpy(stack, &pid, sizeof(pid));
+   pid_t pid = *(pid_t *) (f->esp + 4);
 
-	if(cur->child_thread == NULL)
-		return -1;
-	for(struct list_elem child = list_head(cur -> waited_children), child !=list_tail(cur -> waited_children), child = child -> next)
-		if(cur -> child_thread -> elem  == child)
-		return -1;	
+    struct thread *cur = thread_current();
 
-	//Wait for the child process to die and return the status
-	return process_wait(cur->child_thread->tid);
 
-	
-	
+    cur->stack -= sizeof(pid_t);
+    memcpy(cur->stack, &pid, sizeof(pid_t));
+
+  
+    struct list_elem *e;
+    for (e = list_begin(&cur->waited_children); e != list_end(&cur->waited_children); e = list_next(e)) {
+        struct thread *waited_child = list_entry(e, struct thread, child_elem);
+        
+        if (waited_child->pid == pid) {
+            return -1;
+        }
+    }
+
+    struct thread *child_thread = NULL;
+    for (e = list_begin(&cur->children); e != list_end(&cur->children); e = list_next(e)) {
+        struct thread *child = list_entry(e, struct thread, child_elem);
+        
+        if (child->pid == pid) {
+            child_thread = child;
+            break;
+        }
+    }
+
+    if (child_thread == NULL) 
+        return -1;
+    
+    	list_push_back(&cur->waited_children, &child_thread->child_elem);	
+	return process_wait(cur->child_thread->tid);	
 	
 }
 

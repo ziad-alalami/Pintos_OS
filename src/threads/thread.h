@@ -97,7 +97,7 @@ struct thread
     struct list_elem elem;              /* List element. */
     //====================================================
     struct semaphore sema;		/*Thread semaphore */
-    struct thread *child_thread;		/* Thread that points to a child thread */    
+    struct list children;		/* Thread that points to a child thread */    
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

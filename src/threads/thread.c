@@ -343,6 +343,7 @@ thread_exit (void)
 
 #ifdef USERPROG
   process_exit ();
+  sema_up(&thread_current()->sema);
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
@@ -523,6 +524,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->exit_status = -1;
   t->magic = THREAD_MAGIC;
+  list_init(t->children);
   list_init(t->waited_children);
   sema_init(t->sema, 0);
   old_level = intr_disable ();
