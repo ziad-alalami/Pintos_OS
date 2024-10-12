@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include "../lib/user/syscall.h"
 #include "synch.h"
+#include "filesys/file.h"
+#include "filesys/file.c"
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -93,8 +95,9 @@ struct thread
     int exit_status;
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;		/* Tick till wake up.  */
-    struct list waited_children;	/* List of children already waited on*/
-     
+    struct list waited_children;	/* List of children already waited on*/ 
+    struct file fdt[64];		/* File descriptor table */
+    int next_fd;			/* Keeps track of next free fd */    
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     //====================================================

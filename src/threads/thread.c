@@ -209,7 +209,7 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   /*Whatever thread calls this function is the parent of this thread */
-  list_push_front(&thread_current()->children, t->elem);
+  list_push_front(&thread_current()->children, &t->elem);
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -530,6 +530,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->children);
   list_init(&t->waited_children);
   sema_init(&t->sema, 0);
+  t-> next_fd = 2; // 0 and 1 are reserved for STD_IN and STD_OUT respectively
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);

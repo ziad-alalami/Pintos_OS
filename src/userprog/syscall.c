@@ -294,8 +294,11 @@ pid_t exec(const char * cmd_line)
 
 bool create(const char *file, unsigned initial_size)
 {
-	//TODO
-	return false;
+
+	if(!validate_pointer(file))
+		return false;
+
+	return filesys_create(file, initial_size);
 }
 
 bool remove(const char *file)
@@ -306,43 +309,96 @@ bool remove(const char *file)
 
 int open(const char *file)
 {
-	//TODO
-	return -1;
+	struct thread *cur = thread_current();
+	fd = cur -> next_fd;
+
+	if(!validate_pointer(file) || fd == -1)
+		return -1;
+
+	struct file opened_file = filesys_open(file);
+
+	if(opened_file == NULL)
+		return -1;
+
+	cur->fdt[fd] = opened_file;
+
+	for(int i = 2; i < 64; i++)
+	{
+		if(cur -> fdt[i] == NULL)
+		{
+			cur -> next_fd = i;
+			break;
+		}	
+	}
+	if(cur -> next_fd == fd) //Next_fd did not change so there is no space
+	   cur -> next_fd = -1;
+
+	return fd;
+
 }
 
 int filesize(int fd)
 {
-	//TODO
-	return -1;
+	if(fd < 0 || fd > 63)
+		return -1;
+
+	struct thread * cur = thread_current();
+	struct file file_ = cur -> fdt[fd];
+
+	if(file_ == NULL)
+		return -1;
+
+	return file_length(file_);
 }
 
 int read(int fd, void *buffer, unsigned size)
 {
-	//TODO
-	return -1;
+
+	if(!validate_pointer(fd) || fd < 0 || fd > 63)
+		return -1;
+	
+	struct file file_ = cur -> fdt[fd];
+
+	if(file_ == NULL && fd != 0)
+		return -1;
+	//SYNCHRONIZATION MECHANISM
+	//DEAL WITH SPECIAL CASE FD == 0
+	return file_read(fd, buffer, size);
 }
 
 int write(int fd, const void * buffer, unsigned size)
 {
-	//TODO
+	//SYNCHRONIZATION MECHANISM
+	//DEAL WITH SPECIAL CASE FD == 0
 	return -1;
 }
 
 void seek(int fd, unsigned position)
 {
-	//TODO
-	return;
+	ASSERT(fd > 1 && fd < 64); //You can not seek in std_in and std_out?	
+	struct file * file_ = thread_current()->fdt[fd];
+	ASSERT(file_ != NULL);
+
+	file_seek(fd, position);
 }
 
 unsigned tell(int fd)
 {
-	//TODO
-	return 0;
+	if(fd < 2 || fd > 63)
+		return -1;
+	struct file * file_ = thread_current()->fdt[fd];
+	return file_tell(file);
 }
 
 void close(int fd)
 {
-	//TODO
-	return;
+	ASSERT(fd >= 0 && fd < 64);
+	struct thread * cur = thread_current();
+	struct file* file_ = cur->fdt[fd];
+	ASSERT(file_ != NULL);
+
+	file_close(file_);
+	if(fd < cur->next_fd)
+		cur->next_fd =fd;
 }
 
