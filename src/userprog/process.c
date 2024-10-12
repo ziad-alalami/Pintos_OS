@@ -87,7 +87,7 @@ start_process (void *command_line_input_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-
+  smea_up(&thread_current()->sema);
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 

@@ -93,7 +93,8 @@ struct thread
     int exit_status;
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;		/* Tick till wake up.  */
-    struct list waited_children;	/* List of children already waited on*/ 
+    struct list waited_children;	/* List of children already waited on*/
+     
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     //====================================================

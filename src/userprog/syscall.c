@@ -265,8 +265,31 @@ int wait(pid_t pid)
 
 pid_t exec(const char * cmd_line)
 {
-	//TODO
-	return -1;
+	if(!validate_pointer(cmd_line))
+		return -1;
+
+	tid = process_execute(cmd_line);
+	if(tid == TID_ERROR)
+		return -1;
+
+	struct thread * cur = thread_current();
+	struct thread *child_thread = NULL;
+	struct list_elem e;
+	for(e = list_begin(&cur -> children); e != list_end(&cur -> children); e = list_next(e);)
+	{
+		struct thread *child = list_entry(e, struct thread, elem);
+		if(child_thread -> tid == tid)
+		{
+			child_thread = child;
+			break;
+		}
+	}
+
+	if(child_thread != NULL)
+		sema_down(&child_thread->sema);
+
+	return tid;
+
 }
 
 bool create(const char *file, unsigned initial_size)
