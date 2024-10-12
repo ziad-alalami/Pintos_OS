@@ -346,7 +346,14 @@ thread_exit (void)
 
 #ifdef USERPROG
   process_exit ();
-  sema_up(&thread_current()->sema);
+  struct thread *cur = thread_current();
+  sema_up(&cur->sema);
+
+  for(int i = 0; i < 64; i++)
+	  if(cur->fdt[i] != NULL)
+		 close(cur->fdt[i]);
+  cur->fdt = NULL;
+  
 #endif
 
   /* Remove thread from all threads list, set our status to dying,

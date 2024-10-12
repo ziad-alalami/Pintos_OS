@@ -15,6 +15,7 @@ static void syscall_handler (struct intr_frame *);
 void
 syscall_init (void) 
 {
+  lock_init(filesys_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -27,22 +28,6 @@ void get_syscall_number(int* value_address)
 	asm volatile("movl (%%esp), %0\n":
 			"=r" (*value_address)
 			);
-}
-
-void** return_arguments(struct intr_frame *f, int num_args) {
- 
-    if (num_args > MAX_ARGS) 
-        num_args = MAX_ARGS;
-    
-    static void* args[MAX_ARGS];
-    
-   
-    for (int i = 0; i < num_args; i++) 
-      
-        args[i] = (void *)(*(uintptr_t *)(f->esp + 4 * (i + 1)));
-    
-    
-    return args;  
 }
 
 static void
@@ -315,7 +300,9 @@ int open(const char *file)
 	if(!validate_pointer(file) || fd == -1)
 		return -1;
 
+	lock_acquire(&filesys_lock);
 	struct file opened_file = filesys_open(file);
+	lock_release(&filesys_lock);
 
 	if(opened_file == NULL)
 		return -1;
@@ -347,30 +334,60 @@ int filesize(int fd)
 
 	if(file_ == NULL)
 		return -1;
-
-	return file_length(file_);
+	
+	int result;
+	lock_acquire(&filesys_lock)
+	result = file_length(file_);
+	lock_release(&filesys_lock);
 }
 
 int read(int fd, void *buffer, unsigned size)
 {
 
-	if(!validate_pointer(fd) || fd < 0 || fd > 63)
+	if(!validate_pointer(buffer) || fd < 0 || fd > 63)
 		return -1;
 	
 	struct file file_ = cur -> fdt[fd];
 
 	if(file_ == NULL && fd != 0)
 		return -1;
-	//SYNCHRONIZATION MECHANISM
+
+	int result;
+	lock_acquire(&filesys_lock);
 	//DEAL WITH SPECIAL CASE FD == 0
-	return file_read(fd, buffer, size);
+	if(fd == 0)
+	{
+		//TODO
+		result = -1;
+	}
+	else
+		result = file_read(fd, buffer, size);
+	lock_release(&filesys_lock);
+
+	return result;
 }
 
 int write(int fd, const void * buffer, unsigned size)
 {
-	//SYNCHRONIZATION MECHANISM
+	if(!validate_pointer(buffer) || fd < 1 || fd > 63)
+		return -1;
+
 	//DEAL WITH SPECIAL CASE FD == 0
-	return -1;
+	struct thread * cur = thread_current();
+	if(cur->fdt[fd] == NULL)
+		return -1;
+
+	int result;
+	lock_acquire(&filesys_lock);
+	if(fd == 1)
+	{
+		//TODO
+	}
+	else
+		result = file_write(fd, buffer, size);
+
+	lock_release(&filesys_lock);
+	return result;
 }
 
 void seek(int fd, unsigned position)
@@ -379,15 +396,24 @@ void seek(int fd, unsigned position)
 	struct file * file_ = thread_current()->fdt[fd];
 	ASSERT(file_ != NULL);
 
+	lock_acquire(&filesys_lock);
 	file_seek(fd, position);
+	lock_release(&filesys_lock);
 }
 
 unsigned tell(int fd)
 {
 	if(fd < 2 || fd > 63)
 		return -1;
+
 	struct file * file_ = thread_current()->fdt[fd];
-	return file_tell(file);
+
+	int result;
+	lock_acquire(&filesys_lock);
+	result = file_tell(file);
+	lock_release(&filesys_lock);
+
+	return result;
 }
 
 void close(int fd)
@@ -397,7 +423,10 @@ void close(int fd)
 	struct file* file_ = cur->fdt[fd];
 	ASSERT(file_ != NULL);
 
+	lock_acquire(&filesys_lock);
 	file_close(file_);
+	lock_release(&filesys_lock);
+
 	if(fd < cur->next_fd)
 		cur->next_fd =fd;
 }
