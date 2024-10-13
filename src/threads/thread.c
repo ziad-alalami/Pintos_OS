@@ -350,9 +350,8 @@ thread_exit (void)
   sema_up(&cur->sema);
 
   for(int i = 0; i < 64; i++)
-	  if(cur->fdt[i] != NULL)
-		 close(cur->fdt[i]);
-  cur->fdt = NULL;
+	 close(i);
+  free(cur->fdt);
   
 #endif
 
@@ -537,6 +536,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->children);
   list_init(&t->waited_children);
   sema_init(&t->sema, 0);
+  t->fdt = calloc(64 , sizeof(struct file *) );
   t-> next_fd = 2; // 0 and 1 are reserved for STD_IN and STD_OUT respectively
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

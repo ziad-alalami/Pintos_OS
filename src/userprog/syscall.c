@@ -1,5 +1,6 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
+#include <stdbool.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -15,7 +16,7 @@ static void syscall_handler (struct intr_frame *);
 void
 syscall_init (void) 
 {
-  lock_init(filesys_lock);
+  lock_init(&filesys_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -243,8 +244,8 @@ int wait(pid_t pid)
     if (child_thread == NULL) 
         return -1;
     
-    	list_push_back(&cur->waited_children, &child_thread->elem);	
-	return process_wait(child_thread->tid);	
+    list_push_back(&cur->waited_children, &child_thread->elem);	
+    return process_wait(child_thread->tid);	
 	
 }
 
@@ -253,14 +254,14 @@ pid_t exec(const char * cmd_line)
 	if(!validate_pointer(cmd_line))
 		return -1;
 
-	tid = process_execute(cmd_line);
+	tid_t tid = process_execute(cmd_line);
 	if(tid == TID_ERROR)
 		return -1;
 
 	struct thread * cur = thread_current();
 	struct thread *child_thread = NULL;
-	struct list_elem e;
-	for(e = list_begin(&cur -> children); e != list_end(&cur -> children); e = list_next(e);)
+	struct list_elem* e;
+	for(e = list_begin(&cur -> children); e != list_end(&cur -> children); e = list_next(e))
 	{
 		struct thread *child = list_entry(e, struct thread, elem);
 		if(child_thread -> tid == tid)
@@ -295,13 +296,13 @@ bool remove(const char *file)
 int open(const char *file)
 {
 	struct thread *cur = thread_current();
-	fd = cur -> next_fd;
+	int fd = cur -> next_fd;
 
 	if(!validate_pointer(file) || fd == -1)
 		return -1;
 
 	lock_acquire(&filesys_lock);
-	struct file opened_file = filesys_open(file);
+	struct file* opened_file = filesys_open(file);
 	lock_release(&filesys_lock);
 
 	if(opened_file == NULL)
@@ -330,15 +331,16 @@ int filesize(int fd)
 		return -1;
 
 	struct thread * cur = thread_current();
-	struct file file_ = cur -> fdt[fd];
+	struct file* file_ = cur -> fdt[fd];
 
 	if(file_ == NULL)
 		return -1;
 	
 	int result;
-	lock_acquire(&filesys_lock)
+	lock_acquire(&filesys_lock);
 	result = file_length(file_);
 	lock_release(&filesys_lock);
+	return result;
 }
 
 int read(int fd, void *buffer, unsigned size)
@@ -347,7 +349,7 @@ int read(int fd, void *buffer, unsigned size)
 	if(!validate_pointer(buffer) || fd < 0 || fd > 63)
 		return -1;
 	
-	struct file file_ = cur -> fdt[fd];
+	struct file* file_ = thread_current() -> fdt[fd];
 
 	if(file_ == NULL && fd != 0)
 		return -1;
@@ -361,7 +363,7 @@ int read(int fd, void *buffer, unsigned size)
 		result = -1;
 	}
 	else
-		result = file_read(fd, buffer, size);
+		result = file_read(file_, buffer, size);
 	lock_release(&filesys_lock);
 
 	return result;
@@ -381,10 +383,11 @@ int write(int fd, const void * buffer, unsigned size)
 	lock_acquire(&filesys_lock);
 	if(fd == 1)
 	{
+		result = -1;
 		//TODO
 	}
 	else
-		result = file_write(fd, buffer, size);
+		result = file_write(cur->fdt[fd], buffer, size);
 
 	lock_release(&filesys_lock);
 	return result;
@@ -394,10 +397,9 @@ void seek(int fd, unsigned position)
 {
 	ASSERT(fd > 1 && fd < 64); //You can not seek in std_in and std_out?	
 	struct file * file_ = thread_current()->fdt[fd];
-	ASSERT(file_ != NULL);
 
 	lock_acquire(&filesys_lock);
-	file_seek(fd, position);
+	file_seek(file_, position);
 	lock_release(&filesys_lock);
 }
 
@@ -410,7 +412,7 @@ unsigned tell(int fd)
 
 	int result;
 	lock_acquire(&filesys_lock);
-	result = file_tell(file);
+	result = file_tell(file_);
 	lock_release(&filesys_lock);
 
 	return result;
@@ -421,7 +423,6 @@ void close(int fd)
 	ASSERT(fd >= 0 && fd < 64);
 	struct thread * cur = thread_current();
 	struct file* file_ = cur->fdt[fd];
-	ASSERT(file_ != NULL);
 
 	lock_acquire(&filesys_lock);
 	file_close(file_);

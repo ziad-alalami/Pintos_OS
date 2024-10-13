@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include "../lib/user/syscall.h"
+#include "lib/user/syscall.h"
 #include "synch.h"
 #include "filesys/file.h"
 #include "filesys/file.c"
@@ -96,7 +96,7 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;		/* Tick till wake up.  */
     struct list waited_children;	/* List of children already waited on*/ 
-    struct file fdt[64];		/* File descriptor table */
+    struct file** fdt;		        /* File descriptor table */
     int next_fd;			/* Keeps track of next free fd */    
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
