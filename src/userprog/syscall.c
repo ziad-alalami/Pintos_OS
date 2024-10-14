@@ -13,6 +13,8 @@
 
 static void syscall_handler (struct intr_frame *);
 
+static struct lock filesys_lock;
+
 void
 syscall_init (void) 
 {

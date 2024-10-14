@@ -3,7 +3,6 @@
 #include <stdbool.h>
 typedef int pid_t;
 void syscall_init (void);
-struct lock filesys_lock;
 bool validate_pointer(void *);
 void get_syscall_number(int *);
 void halt(void);

@@ -7,7 +7,6 @@
 #include "lib/user/syscall.h"
 #include "synch.h"
 #include "filesys/file.h"
-#include "filesys/file.c"
 /* States in a thread's life cycle. */
 enum thread_status
   {
