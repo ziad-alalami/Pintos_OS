@@ -38,7 +38,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   int syscall_number;
   get_syscall_number(&syscall_number);
-  int syscall_output;
 
   struct thread* cur = thread_current();
   

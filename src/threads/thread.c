@@ -352,8 +352,7 @@ thread_exit (void)
 
   for(int i = 0; i < 64; i++)
 	 close(i);
-  free(cur->fdt);
-  
+  free(cur->fdt);  
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
