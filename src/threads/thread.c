@@ -352,7 +352,7 @@ thread_exit (void)
 
   for(int i = 0; i < 64; i++)
 	 close(i);
-  free(cur->fdt);  
+  free(cur->fdt);
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
@@ -525,7 +525,7 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT (name != NULL);
-
+  printf("1");
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);

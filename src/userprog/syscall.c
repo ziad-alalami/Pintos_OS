@@ -253,7 +253,7 @@ int wait(pid_t pid)
 pid_t exec(const char * cmd_line)
 {
 	if(!validate_pointer(cmd_line))
-		return -1;
+		exit(-1);
 
 	tid_t tid = process_execute(cmd_line);
 	if(tid == TID_ERROR)
@@ -265,7 +265,7 @@ pid_t exec(const char * cmd_line)
 	for(e = list_begin(&cur -> children); e != list_end(&cur -> children); e = list_next(e))
 	{
 		struct thread *child = list_entry(e, struct thread, elem);
-		if(child_thread -> tid == tid)
+		if(child -> tid == tid)
 		{
 			child_thread = child;
 			break;
@@ -283,7 +283,7 @@ bool create(const char *file, unsigned initial_size)
 {
 
 	if(!validate_pointer(file))
-		return false;
+		exit(-1);
 
 	return filesys_create(file, initial_size);
 }
@@ -299,7 +299,10 @@ int open(const char *file)
 	struct thread *cur = thread_current();
 	int fd = cur -> next_fd;
 
-	if(!validate_pointer(file) || fd == -1)
+	if(!validate_pointer(file))
+		exit(-1);
+
+	if(fd == -1)
 		return -1;
 
 	lock_acquire(&filesys_lock);
