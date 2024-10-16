@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -31,24 +32,18 @@ process_execute (const char *command_line_input)
   char *fn_copy;
   tid_t tid;
 
-  // Duplicate command line input as strtok_r
-  // modifies the original string, and we want to
-  // be able to parse it in start_process
-  char* command_line_input_copy = strrdup(command_line_input);
-
-  char* saveptr;
-  char* file_name = strtok_r(command_line_input_copy, " ", saveptr);
-
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
-  strlcpy (fn_copy, file_name, PGSIZE);
+  strlcpy (fn_copy, command_line_input, PGSIZE);
+
+  char* saveptr;
+  char* file_name = strtok_r(command_line_input, " ", &saveptr);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  free(command_line_input_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -70,8 +65,9 @@ start_process (void *command_line_input_)
   char *saveptr;
   char *token;
 
-  file_name = strtok_r(command_line_input, " ", saveptr);
-
+  file_name = strtok_r(command_line_input, " ", &saveptr);
+  argv = realloc(argv, sizeof(char*) * (argc + 1));
+  argv[argc++] = file_name;
   while ((token = strtok_r(NULL, " ", &saveptr)) != NULL) {
     argv = realloc(argv, sizeof(char*) * (argc + 1));
     argv[argc] = token;
@@ -86,11 +82,14 @@ start_process (void *command_line_input_)
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
-  if (!success) 
+  if (!success) {
+    palloc_free_page (command_line_input);
     thread_exit ();
+  }
 
   init_stack(argc, argv, &if_.esp);
+
+  palloc_free_page (command_line_input);
   free(argv);
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -103,7 +102,7 @@ start_process (void *command_line_input_)
 }
 
 void
-init_stack(int argc, char* argv[], void **p) {
+init_stack(int argc, char** argv, void **p) {
   char **new_argv = (char **)malloc((argc + 1) * sizeof(char *));
 
   // Copy strings in argv to stack
@@ -121,7 +120,7 @@ init_stack(int argc, char* argv[], void **p) {
   // Add padding to nearest 4 bytes
   uintptr_t stack_addr = (uintptr_t)*p;
   if (stack_addr % 4 != 0) {
-      int padding = 4 - (stack_addr % 4);
+      int padding = stack_addr % 4;
       *p = (void *)((char *)(*p) - padding);
   }
 
@@ -159,6 +158,7 @@ init_stack(int argc, char* argv[], void **p) {
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  while (true) {}
   return -1;
 }
 
