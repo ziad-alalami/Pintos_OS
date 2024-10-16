@@ -89,6 +89,7 @@ start_process (void *command_line_input_)
   }
 
   init_stack(argc, argv, &if_.esp);
+  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   palloc_free_page (command_line_input);
   free(argv);

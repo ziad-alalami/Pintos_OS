@@ -522,6 +522,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->exit_status = -1;
+  memset (t->fdt, 0, sizeof(t->fdt));
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
