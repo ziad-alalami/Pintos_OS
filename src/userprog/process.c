@@ -69,6 +69,7 @@ start_process (void *command_line_input_)
   argv = realloc(argv, sizeof(char*) * (argc + 1));
   argv[argc++] = file_name;
   while ((token = strtok_r(NULL, " ", &saveptr)) != NULL) {
+    if (strlen(token) == 0) continue;
     argv = realloc(argv, sizeof(char*) * (argc + 1));
     argv[argc] = token;
     ++argc;
@@ -156,8 +157,9 @@ init_stack(int argc, char** argv, void **p) {
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
+  // TODO update this to wait properly
   while (true) {}
   return -1;
 }
