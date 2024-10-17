@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -17,12 +18,23 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/* Procss descriptor used for parent/child relationship between user threads */
+struct process_descriptor {
+   int exit_status;
+   bool is_exited;
+   tid_t tid;
+   struct semaphore sema;
+   struct thread* child;
+   struct list_elem elem;
+};
 
 /* A kernel thread or user process.
 
@@ -88,10 +100,11 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    int exit_status;                    /* Exit status of thread. (initially -1) */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;		          /* Tick till wake up.  */
-    struct file* fdt[64];                /* File descriptor table. */
+    struct file* fdt[64];               /* File descriptor table. */
+    struct process_descriptor* pd;      /* Process descriptor for parent/child relationship */
+    struct list children;               /* A list of procescs_descriptor* children */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 

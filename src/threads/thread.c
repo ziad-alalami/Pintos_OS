@@ -13,6 +13,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "devices/timer.h"
+#include "threads/malloc.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -208,6 +209,19 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  /* Set up process descriptor for parent/child relationship */
+  struct thread* parent = thread_current();
+  // To be freed by parent
+  struct process_descriptor* pd = malloc(sizeof(struct process_descriptor));
+  pd->child = t;
+  pd->exit_status = -1;
+  pd->is_exited = false;
+  pd->tid = tid;
+  sema_init(&pd->sema, 0);
+  t->pd = pd;
+
+  list_push_back(&parent->children, &pd->elem);
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -339,18 +353,36 @@ thread_tid (void)
 void
 thread_exit (void) 
 {
+  printf("EXIT: %s\n", thread_current()->name);
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
   process_exit ();
 #endif
 
+  struct thread* cur = thread_current();
+
+  // Free child process_descriptors
+  struct list_elem* next;
+  for (struct list_elem* e = list_begin(&cur->children);
+       e != list_end(&cur->children); e = next) {
+    struct process_descriptor* pd = list_entry(e, struct process_descriptor, elem);
+    pd->child->pd = NULL;
+
+    next = list_next(e);
+    list_remove(e);
+
+    free(pd);
+  }
+
+  printf("HERE\n");
+
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
-  list_remove (&thread_current()->allelem);
-  thread_current ()->status = THREAD_DYING;
+  list_remove (&cur->allelem);
+  cur->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
 }
@@ -521,9 +553,10 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
-  t->exit_status = -1;
   memset (t->fdt, 0, sizeof(t->fdt));
   t->magic = THREAD_MAGIC;
+  list_init(&t->children);
+  t->pd = NULL; // Will be initialized in thread_create
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
