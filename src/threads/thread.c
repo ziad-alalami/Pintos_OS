@@ -353,7 +353,6 @@ thread_tid (void)
 void
 thread_exit (void) 
 {
-  printf("EXIT: %s\n", thread_current()->name);
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
@@ -374,8 +373,6 @@ thread_exit (void)
 
     free(pd);
   }
-
-  printf("HERE\n");
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us

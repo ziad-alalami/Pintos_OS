@@ -185,8 +185,8 @@ process_wait (tid_t child_tid)
     sema_down(&child->sema);
 
   int exit_status = child->exit_status;
-  free(child);
   list_remove(child_elem);
+  free(child);
 
   return exit_status;
 }
