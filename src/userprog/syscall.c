@@ -105,6 +105,11 @@ syscall_handler (struct intr_frame *f)
       close(fd);
       break;
       }
+    case SYS_PIPE :
+      {
+	      int* fds = *(int **)(f->esp + sizeof(int));
+	      f->eax= pipe(fds);
+      }
   }
 }
 
@@ -145,6 +150,8 @@ int write(int fd, const void *buffer, unsigned size) {
   if (!validate_pointer(buffer)) exit_(-1);
   if(fd < 0 || fd > 63) return -1;
 
+  if(fd == 0) exit_(-1);
+
   if (fd == 1 && !thread_current()->stdout_closed) {
     lock_acquire(&filesys_lock);
     putbuf(buffer, size);
@@ -168,6 +175,8 @@ int read(int fd, const void *buffer, unsigned size)
 	       exit_(-1);
 
 	if (fd < 0 || fd > 63) return -1;
+
+ if(fd == 1) exit_(-1);
 
  if (fd == 0 && !thread_current() -> stdin_closed) {
     lock_acquire(&filesys_lock);
@@ -279,12 +288,33 @@ void close(int fd)
 	
 	struct thread* cur = thread_current();
 	if(cur->fdt[fd] == NULL)
-		return;
+	{
+		if(fd == 0)
+		   cur->stdin_closed = true;
+	        
+		else if(fd == 1)
+		   cur->stdout_closed = true;
 
+		return;
+	}
 	lock_acquire(&filesys_lock);
 	file_close(cur->fdt[fd]);
 	lock_release(&filesys_lock);
 
 	cur->next_fd = fd;
 
+}
+
+int pipe(int* fds)
+{
+	if(!validate_pointer(fds))
+		exit_(-1);
+
+	struct thread* cur = thread_current();
+	
+
+
+
+	//TODO create a buffer for the pipe and make it circular
+	return -1;
 }

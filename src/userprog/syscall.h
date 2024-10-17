@@ -17,4 +17,5 @@ int filesize(int);
 void seek(int, unsigned);
 void close(int);
 int open(const char*);
+int pipe(int*);
 #endif /* userprog/syscall.h */

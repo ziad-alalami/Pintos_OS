@@ -3,12 +3,23 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
+/*Type of File
+ * STDIN and STDOUT are not implemented in this design because they are available
+ * upon creating each process and the process tracks if they were closed */
+enum fd_type
+{
+	FD_REGULAR,
+	FD_PIPE_READ,
+	FD_PIPE_WRITE
+};
+
 /* An open file. */
 struct file 
   {
     struct inode *inode;        /* File's inode. */
     off_t pos;                  /* Current position. */
     bool deny_write;            /* Has file_deny_write() been called? */
+    enum fd_type fd_type;	/* Type of file*/
   };
 
 /* Opens a file for the given INODE, of which it takes ownership,

@@ -155,7 +155,10 @@ page_fault (struct intr_frame *f)
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
+	  user ? "user" : "kernel");
+  if(user)
+  {  exit_(-1); }
+  else
+  { kill (f);}
 }
 

@@ -95,6 +95,7 @@ struct thread
     int next_fd;			/* Next open file descriptor */
     bool stdin_closed;			/*Whether STDIN has been closed */
     bool stdout_closed;			/*Whether STDOUT has been closed */
+    struct file* running_file;	        /*The file containing the program/executable */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
