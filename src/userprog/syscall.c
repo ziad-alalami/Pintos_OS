@@ -44,8 +44,14 @@ syscall_handler (struct intr_frame *f)
     case SYS_OPEN:
       break;
     case SYS_FILESIZE:
+      int fd = *(int*)(f->esp + sizeof(int));
+      f->eax = filesize(fd);
       break;
     case SYS_READ:
+      int fd = *(int*)(f->esp + sizeof(int));
+      const void* buffer = *(void**)(f->esp + 2 * sizeof(int));
+      unsigned size = *(unsigned*)(f->esp + 2 * sizeof(int) + sizeof(void*));
+      f->eax = read(fd, buffer, size);
       break;
     case SYS_WRITE:
       int fd = *(int*)(f->esp + sizeof(int));
@@ -54,8 +60,13 @@ syscall_handler (struct intr_frame *f)
       f->eax = write(fd, buffer, size);
       break;
     case SYS_SEEK:
+      int fd = *(int*) (f->esp + sizeof(int));
+      unsigned position = *(unsigned*)(f->esp + 2 * sizeof(int));
+      f->eax = seek(fd, position);
       break;
     case SYS_TELL:
+      int fd = *(int*)(f->esp + sizeof(int));
+      f->eax = tell(fd);
       break;
     case SYS_CLOSE :
       break;
@@ -100,4 +111,69 @@ int write(int fd, const void *buffer, unsigned size) {
   lock_release(&filesys_lock);
 
   return result;
+}
+
+int read(int fd, const void *buffer, unsigned size)
+{
+	if(!validate_pointer(buffer) || fd < 0 || fd > 63) return -1;
+
+ if (fd == 0) {
+    lock_acquire(&filesys_lock);
+    input_getc();
+    lock_release(&filesys_lock);
+    return size;
+  }
+
+  struct file* file_ = thread_current()->fdt[fd];
+  if (file_ == NULL) return -1;
+
+  lock_acquire(&filesys_lock);
+  int result = file_read(file_, buffer, size);
+  lock_release(&filesys_lock);
+
+  return result;
+
+}
+
+unsigned tell(int fd)
+{
+	if(fd < 0 || fd > 63)
+		return -1;
+	struct file* file_ = thread_current()->fdt[fd];
+	if(file_ == NULL) return -1;
+
+	lock_acquire(&filesys_lock);
+	unsigned pos = file_tell(file_);
+	lock_release(&filesys_lock);
+}
+
+int filesize(int fd)
+{
+        if(fd < 0 || fd > 63)
+                return -1;
+        struct file* file_ = thread_current()->fdt[fd];
+        if(file_ == NULL) return -1;
+
+        lock_acquire(&filesys_lock);
+        int pos = file_length(file_);
+        lock_release(&filesys_lock);
+
+
+}
+
+void seek(int fd, unsigned position)
+{
+	if(fd < 0 || fd > 63) return;
+
+	struct file* file_ = thread_current()->fdt[fd];
+	if(file_ == NULL) return;
+	file_seek(file_, position);
+}
+
+bool create(const char* file, unsigned initial_size)
+{
+	if(!validate_pointer(file))
+		exit(-1); //Malicious pointer
+	
+	
 }
