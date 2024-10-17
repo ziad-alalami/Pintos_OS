@@ -8,7 +8,7 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
-
+#include <stdlib.h>
 static void syscall_handler (struct intr_frame *);
 
 static struct lock filesys_lock;
@@ -27,49 +27,84 @@ syscall_handler (struct intr_frame *f)
 
   switch (syscall_num) {
     case SYS_HALT:
+	    {
       halt();
       break;
+	    }
     case SYS_EXIT:
+     {
       int status = *(int*)(f->esp + sizeof(int));
       exit_(status);
       break;
+     }
     case SYS_EXEC:
+     {
       break;
+     }
     case SYS_WAIT:
+     {
       break;
+     }
     case SYS_CREATE:
+      {
+      const char *file = *(char **)(f->esp + sizeof(int));
+      unsigned initial_size = *(unsigned *)(f->esp + sizeof(int) + sizeof(char*));
+      f->eax = create(file, initial_size);
       break;
+      }
     case SYS_REMOVE:
+      {
+       const char* file = *(char **)(f->esp + sizeof(int));
+       f->eax = remove(file);
       break;
+      }
     case SYS_OPEN:
+      {
+      const char* file = *(char **)(f->esp + sizeof(int));
+      f->eax = open(file);
       break;
+      }
     case SYS_FILESIZE:
+      {
       int fd = *(int*)(f->esp + sizeof(int));
       f->eax = filesize(fd);
       break;
+      }
     case SYS_READ:
+      {
       int fd = *(int*)(f->esp + sizeof(int));
       const void* buffer = *(void**)(f->esp + 2 * sizeof(int));
       unsigned size = *(unsigned*)(f->esp + 2 * sizeof(int) + sizeof(void*));
       f->eax = read(fd, buffer, size);
       break;
+      }
     case SYS_WRITE:
+      {
       int fd = *(int*)(f->esp + sizeof(int));
       const void* buffer = *(void**)(f->esp + 2 * sizeof(int));
       unsigned size = *(unsigned*)(f->esp + 2 * sizeof(int) + sizeof(void*));
       f->eax = write(fd, buffer, size);
       break;
+      }
     case SYS_SEEK:
+      {
       int fd = *(int*) (f->esp + sizeof(int));
       unsigned position = *(unsigned*)(f->esp + 2 * sizeof(int));
-      f->eax = seek(fd, position);
+      seek(fd, position);
       break;
+      }
     case SYS_TELL:
+      {
       int fd = *(int*)(f->esp + sizeof(int));
       f->eax = tell(fd);
       break;
+      }
     case SYS_CLOSE :
+      {
+      int fd = *(int*)(f->esp + sizeof(int));
+      close(fd);
       break;
+      }
   }
 }
 
@@ -80,6 +115,19 @@ bool validate_pointer(const void* pointer)
 {
   // TODO should it be an || between is_user_vaddr and pagedir_get_page?
 	return pointer != NULL && is_user_vaddr(pointer) && pagedir_get_page(thread_current()->pagedir, pointer) != NULL;
+}
+
+int get_next_fd()
+{
+	struct thread* cur = thread_current();
+	if(cur->stdin_closed && cur->fdt[0] == NULL)
+		return 0;
+	if(cur->stdout_closed && cur->fdt[1] == NULL)
+		return 1;
+	for(int i = 2; i < 64; i++)
+		if(cur->fdt[i] == NULL)
+			return i;
+	return -1; //Table is full
 }
 
 void halt() {
@@ -94,9 +142,10 @@ void exit_(int status) {
 }
 
 int write(int fd, const void *buffer, unsigned size) {
-  if (!validate_pointer(buffer) || fd < 0 || fd > 63) return -1;
+  if (!validate_pointer(buffer)) exit_(-1);
+  if(fd < 0 || fd > 63) return -1;
 
-  if (fd == 1) {
+  if (fd == 1 && !thread_current()->stdout_closed) {
     lock_acquire(&filesys_lock);
     putbuf(buffer, size);
     lock_release(&filesys_lock);
@@ -115,9 +164,12 @@ int write(int fd, const void *buffer, unsigned size) {
 
 int read(int fd, const void *buffer, unsigned size)
 {
-	if(!validate_pointer(buffer) || fd < 0 || fd > 63) return -1;
+	if(!validate_pointer(buffer))
+	       exit_(-1);
 
- if (fd == 0) {
+	if (fd < 0 || fd > 63) return -1;
+
+ if (fd == 0 && !thread_current() -> stdin_closed) {
     lock_acquire(&filesys_lock);
     input_getc();
     lock_release(&filesys_lock);
@@ -135,7 +187,7 @@ int read(int fd, const void *buffer, unsigned size)
 
 }
 
-unsigned tell(int fd)
+unsigned int tell(int fd)
 {
 	if(fd < 0 || fd > 63)
 		return -1;
@@ -145,6 +197,7 @@ unsigned tell(int fd)
 	lock_acquire(&filesys_lock);
 	unsigned pos = file_tell(file_);
 	lock_release(&filesys_lock);
+	return pos;
 }
 
 int filesize(int fd)
@@ -157,7 +210,7 @@ int filesize(int fd)
         lock_acquire(&filesys_lock);
         int pos = file_length(file_);
         lock_release(&filesys_lock);
-
+	return pos;
 
 }
 
@@ -173,7 +226,65 @@ void seek(int fd, unsigned position)
 bool create(const char* file, unsigned initial_size)
 {
 	if(!validate_pointer(file))
-		exit(-1); //Malicious pointer
+		exit_(-1); //Malicious pointer
+
+	lock_acquire(&filesys_lock);
+	bool created = filesys_create(file, initial_size);
+	lock_release(&filesys_lock);
+
+	return created;
 	
+}
+
+bool remove(const char* file)
+{
+	if(!validate_pointer(file))
+		exit_(-1);
+	lock_acquire(&filesys_lock);
+	bool removed = filesys_remove(file);
+	lock_release(&filesys_lock);
+	return removed;
+}
+
+int open(const char* file)
+{
+	if(!validate_pointer(file))
+		exit_(-1);
 	
+	struct thread* cur = thread_current();
+	int return_fd = cur ->next_fd;
+
+	if(cur-> next_fd == -1) // FDT is full
+	   return -1;
+
+	lock_acquire(&filesys_lock);
+	struct file* file_ = filesys_open(file);
+	lock_release(&filesys_lock);
+
+	if(file_ == NULL)
+		return -1;
+
+	cur->fdt[return_fd] = file_;
+
+	cur->next_fd = get_next_fd();
+
+       return cur->next_fd;	
+
+}
+
+void close(int fd)
+{
+	if(fd < 0 || fd > 63)
+		exit_(-1);
+	
+	struct thread* cur = thread_current();
+	if(cur->fdt[fd] == NULL)
+		return;
+
+	lock_acquire(&filesys_lock);
+	file_close(cur->fdt[fd]);
+	lock_release(&filesys_lock);
+
+	cur->next_fd = fd;
+
 }
