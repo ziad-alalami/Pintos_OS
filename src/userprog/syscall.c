@@ -9,6 +9,9 @@
 #include "threads/vaddr.h"
 #include "filesys/file.h"
 #include <stdlib.h>
+#include "userprog/process.h"
+#include "threads/malloc.h"
+
 static void syscall_handler (struct intr_frame *);
 
 static struct lock filesys_lock;
@@ -39,10 +42,14 @@ syscall_handler (struct intr_frame *f)
      }
     case SYS_EXEC:
      {
+      char* cmd_line = *(char**)(f->esp + sizeof(int));
+      f->eax = exec(cmd_line);
       break;
      }
     case SYS_WAIT:
      {
+      pid_t pid = *(pid_t*)(f->esp + sizeof(int));
+      f->eax = wait(pid);
       break;
      }
     case SYS_CREATE:
@@ -141,7 +148,11 @@ void halt() {
 
 void exit_(int status) {
   struct thread* cur = thread_current();
-  cur->exit_status = status;
+  if (cur->pd != NULL) {
+    cur->pd->exit_status = status;
+    cur->pd->is_exited = true;
+    sema_up(&cur->pd->sema);
+  }
   printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
 }
@@ -167,6 +178,35 @@ int write(int fd, const void *buffer, unsigned size) {
   lock_release(&filesys_lock);
 
   return result;
+}
+
+pid_t exec(const char* cmd_line) {
+  pid_t pid = process_execute(cmd_line);
+
+  if (pid == TID_ERROR) return -1;
+
+  struct thread* cur = thread_current();
+  struct list_elem* child_elem = NULL;
+  for (struct list_elem* e = list_begin(&cur->children); e != list_end(&cur->children); e = list_next(e)) {
+    struct process_descriptor* pd = list_entry(e, struct process_descriptor, elem);
+    if (pd->tid == pid) {
+      child_elem = e;
+      break;
+    }
+  }
+
+  if (child_elem == NULL) return -1;
+
+  struct process_descriptor* child = list_entry(child_elem, struct process_descriptor, elem);
+
+  sema_down(&child->sema);
+
+  // Return child->tid as it will be updated to -1 if loading fails
+  return child->tid;
+}
+
+int wait(pid_t pid) {
+  return process_wait(pid);
 }
 
 int read(int fd, const void *buffer, unsigned size)

@@ -45,7 +45,7 @@ process_execute (const char *command_line_input)
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
   return tid;
 }
 
@@ -82,11 +82,18 @@ start_process (void *command_line_input_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
 
+  struct thread* cur = thread_current();
+
   /* If load failed, quit. */
   if (!success) {
+    cur->pd->tid = -1;
+    cur->pd->is_exited = true;
+    sema_up(&cur->pd->sema);
     palloc_free_page (command_line_input);
     thread_exit ();
   }
+
+  sema_up(&cur->pd->sema);
 
   init_stack(argc, argv, &if_.esp);
   // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
@@ -160,9 +167,28 @@ init_stack(int argc, char** argv, void **p) {
 int
 process_wait (tid_t child_tid) 
 {
-  // TODO update this to wait properly
-  while (true) {}
-  return -1;
+  struct thread* cur = thread_current();
+  struct list_elem* child_elem = NULL;
+  for (struct list_elem* e = list_begin(&cur->children); e != list_end(&cur->children); e = list_next(e)) {
+    struct process_descriptor* pd = list_entry(e, struct process_descriptor, elem);
+    if (pd->tid == child_tid) {
+      child_elem = e;
+      break;
+    }
+  }
+
+  if (child_elem == NULL) return -1;
+
+  struct process_descriptor* child = list_entry(child_elem, struct process_descriptor, elem);
+
+  if (!child->is_exited)
+    sema_down(&child->sema);
+
+  int exit_status = child->exit_status;
+  list_remove(child_elem);
+  free(child);
+
+  return exit_status;
 }
 
 /* Free the current process's resources. */
