@@ -4,10 +4,12 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "devices/shutdown.h"
+#include "devices/input.h"
 #include "threads/synch.h"
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
+#include "filesys/filesys.h"
 #include <stdlib.h>
 #include "userprog/process.h"
 #include "threads/malloc.h"
@@ -30,28 +32,28 @@ syscall_handler (struct intr_frame *f)
 
   switch (syscall_num) {
     case SYS_HALT:
-	    {
+      {
       halt();
       break;
-	    }
+      }
     case SYS_EXIT:
-     {
+      {
       int status = *(int*)(f->esp + sizeof(int));
       exit_(status);
       break;
-     }
+      }
     case SYS_EXEC:
-     {
+      {
       char* cmd_line = *(char**)(f->esp + sizeof(int));
       f->eax = exec(cmd_line);
       break;
-     }
+      }
     case SYS_WAIT:
-     {
+      {
       pid_t pid = *(pid_t*)(f->esp + sizeof(int));
       f->eax = wait(pid);
       break;
-     }
+      }
     case SYS_CREATE:
       {
       const char *file = *(char **)(f->esp + sizeof(int));
@@ -61,8 +63,8 @@ syscall_handler (struct intr_frame *f)
       }
     case SYS_REMOVE:
       {
-       const char* file = *(char **)(f->esp + sizeof(int));
-       f->eax = remove(file);
+      const char* file = *(char **)(f->esp + sizeof(int));
+      f->eax = remove(file);
       break;
       }
     case SYS_OPEN:
@@ -106,16 +108,17 @@ syscall_handler (struct intr_frame *f)
       f->eax = tell(fd);
       break;
       }
-    case SYS_CLOSE :
+    case SYS_CLOSE:
       {
       int fd = *(int*)(f->esp + sizeof(int));
       close(fd);
       break;
       }
-    case SYS_PIPE :
+    case SYS_PIPE:
       {
-	      int* fds = *(int **)(f->esp + sizeof(int));
-	      f->eax= pipe(fds);
+      int* fds = *(int **)(f->esp + sizeof(int));
+      f->eax= pipe(fds);
+      break;
       }
   }
 }
@@ -136,7 +139,7 @@ int get_next_fd()
 		return 0;
 	if(cur->stdout_closed && cur->fdt[1] == NULL)
 		return 1;
-	for(int i = 2; i < 64; i++)
+	for(int i = 2; i < 64; ++i)
 		if(cur->fdt[i] == NULL)
 			return i;
 	return -1; //Table is full
@@ -161,16 +164,18 @@ int write(int fd, const void *buffer, unsigned size) {
   if (!validate_pointer(buffer)) exit_(-1);
   if(fd < 0 || fd > 63) return -1;
 
-  if(fd == 0) exit_(-1);
+  struct thread* cur = thread_current();
 
-  if (fd == 1 && !thread_current()->stdout_closed) {
+  if (fd == 0 && !cur->stdin_closed) exit_(-1);
+
+  if (fd == 1 && !cur->stdout_closed) {
     lock_acquire(&filesys_lock);
     putbuf(buffer, size);
     lock_release(&filesys_lock);
     return size;
   }
 
-  struct file* file_ = thread_current()->fdt[fd];
+  struct file* file_ = cur->fdt[fd];
   if (file_ == NULL) return -1;
 
   lock_acquire(&filesys_lock);
@@ -212,20 +217,22 @@ int wait(pid_t pid) {
 int read(int fd, const void *buffer, unsigned size)
 {
 	if(!validate_pointer(buffer))
-	       exit_(-1);
+	  exit_(-1);
 
 	if (fd < 0 || fd > 63) return -1;
 
- if(fd == 1) exit_(-1);
+  struct thread* cur = thread_current();
 
- if (fd == 0 && !thread_current() -> stdin_closed) {
+  if (fd == 1 && !cur->stdout_closed) exit_(-1);
+
+  if (fd == 0 && !cur->stdin_closed) {
     lock_acquire(&filesys_lock);
     input_getc();
     lock_release(&filesys_lock);
     return size;
   }
 
-  struct file* file_ = thread_current()->fdt[fd];
+  struct file* file_ = cur->fdt[fd];
   if (file_ == NULL) return -1;
 
   lock_acquire(&filesys_lock);
@@ -233,7 +240,6 @@ int read(int fd, const void *buffer, unsigned size)
   lock_release(&filesys_lock);
 
   return result;
-
 }
 
 unsigned int tell(int fd)
@@ -251,16 +257,15 @@ unsigned int tell(int fd)
 
 int filesize(int fd)
 {
-        if(fd < 0 || fd > 63)
-                return -1;
-        struct file* file_ = thread_current()->fdt[fd];
-        if(file_ == NULL) return -1;
+  if(fd < 0 || fd > 63)
+    return -1;
+  struct file* file_ = thread_current()->fdt[fd];
+  if(file_ == NULL) return -1;
 
-        lock_acquire(&filesys_lock);
-        int pos = file_length(file_);
-        lock_release(&filesys_lock);
-	return pos;
-
+  lock_acquire(&filesys_lock);
+  int size = file_length(file_);
+  lock_release(&filesys_lock);
+	return size;
 }
 
 void seek(int fd, unsigned position)
@@ -269,7 +274,9 @@ void seek(int fd, unsigned position)
 
 	struct file* file_ = thread_current()->fdt[fd];
 	if(file_ == NULL) return;
+  lock_acquire(&filesys_lock);
 	file_seek(file_, position);
+  lock_release(&filesys_lock);
 }
 
 bool create(const char* file, unsigned initial_size)
@@ -282,7 +289,6 @@ bool create(const char* file, unsigned initial_size)
 	lock_release(&filesys_lock);
 
 	return created;
-	
 }
 
 bool remove(const char* file)
@@ -301,10 +307,10 @@ int open(const char* file)
 		exit_(-1);
 	
 	struct thread* cur = thread_current();
-	int return_fd = cur ->next_fd;
+	int next_fd = get_next_fd();
 
-	if(cur-> next_fd == -1) // FDT is full
-	   return -1;
+	if(next_fd == -1) // FDT is full
+	  return -1;
 
 	lock_acquire(&filesys_lock);
 	struct file* file_ = filesys_open(file);
@@ -313,12 +319,9 @@ int open(const char* file)
 	if(file_ == NULL)
 		return -1;
 
-	cur->fdt[return_fd] = file_;
+	cur->fdt[next_fd] = file_;
 
-	cur->next_fd = get_next_fd();
-
-       return cur->next_fd;	
-
+  return next_fd;	
 }
 
 void close(int fd)
@@ -327,22 +330,19 @@ void close(int fd)
 		exit_(-1);
 	
 	struct thread* cur = thread_current();
-	if(cur->fdt[fd] == NULL)
-	{
-		if(fd == 0)
-		   cur->stdin_closed = true;
-	        
-		else if(fd == 1)
-		   cur->stdout_closed = true;
 
-		return;
-	}
-	lock_acquire(&filesys_lock);
-	file_close(cur->fdt[fd]);
-	lock_release(&filesys_lock);
-
-	cur->next_fd = fd;
-
+  if (fd == 0 && !cur->stdin_closed)
+    cur->stdin_closed = true;
+  else if (fd == 1 && !cur->stdout_closed)
+    cur->stdout_closed = true;
+  else {
+    if(cur->fdt[fd] == NULL)
+		  return;
+    lock_acquire(&filesys_lock);
+    file_close(cur->fdt[fd]);
+    lock_release(&filesys_lock);
+    cur->fdt[fd] = NULL;
+  }
 }
 
 int pipe(int* fds)

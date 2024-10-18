@@ -14,6 +14,7 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #include "threads/malloc.h"
+#include "filesys/file.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -377,10 +378,10 @@ thread_exit (void)
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */ 
-  intr_disable ();
   for(int i = 0; i < 64; i++)
-	  close(cur->fdt[i]);
+	  file_close(cur->fdt[i]);
  
+  intr_disable();
   list_remove (&cur->allelem);
   cur->status = THREAD_DYING;
   schedule ();
@@ -555,7 +556,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   memset (t->fdt, 0, sizeof(t->fdt));
   t->magic = THREAD_MAGIC;
-  t->next_fd = 2;
   t->stdin_closed = false;
   t->stdout_closed = false; 
   list_init(&t->children);
