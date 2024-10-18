@@ -221,7 +221,8 @@ thread_create (const char *name, int priority,
   sema_init(&pd->exec_sema, 0);
   sema_init(&pd->wait_sema, 0);
   t->pd = pd;
-
+  t->pipe_read = -1;
+  t->pipe_write = -1;
   list_push_back(&parent->children, &pd->elem);
 
   /* Add to run queue. */

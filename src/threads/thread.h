@@ -107,6 +107,11 @@ struct thread
     struct file* running_file;	        /*The file containing the program/executable */
     struct process_descriptor* pd;      /* Process descriptor for parent/child relationship */
     struct list children;               /* A list of procescs_descriptor* children */
+    int pipe_read_fd;			/*Determines the FD of pipe read (-1 or 0)*/
+    int pipe_write_fd;			/* Determines the FD of pipe write (-1 or another value)*/
+    struct pipe* pipe_read;		/*Structure pointing to pipe read*/
+    struct pipe* pipe_write;		/*Structure pointing to pipe write*/ 
+    
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 

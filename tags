@@ -103,6 +103,7 @@ ACTUAL	src/tests/vm/mmap-close.c	/^#define ACTUAL /;"	d	file:
 ACTUAL	src/tests/vm/mmap-unmap.c	/^#define ACTUAL /;"	d	file:
 ACTUAL	src/tests/vm/mmap-write.c	/^#define ACTUAL /;"	d	file:
 ALIGN	src/threads/build/threads/kernel.lds.s	/^       . = ALIGN(0x1000);$/;"	d
+ALIGN	src/userprog/build/threads/kernel.lds.s	/^       . = ALIGN(0x1000);$/;"	d
 ARENA_MAGIC	src/threads/malloc.c	/^#define ARENA_MAGIC /;"	d	file:
 ASSERT	src/lib/debug.h	/^#define ASSERT(/;"	d
 Algorithm::Diff	src/tests/Algorithm/Diff.pm	/^package Algorithm::Diff;$/;"	p
@@ -172,6 +173,7 @@ DATA_REG	src/devices/kbd.c	/^#define DATA_REG /;"	d	file:
 DATA_SIZE	src/tests/vm/page-merge-seq.c	/^#define DATA_SIZE /;"	d	file:
 DATA_SIZE	src/tests/vm/parallel-merge.c	/^#define DATA_SIZE /;"	d	file:
 DEPENDS	src/threads/build/Makefile	/^DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))$/;"	m
+DEPENDS	src/userprog/build/Makefile	/^DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))$/;"	m
 DEVICES_BLOCK_H	src/devices/block.h	/^#define DEVICES_BLOCK_H$/;"	d
 DEVICES_IDE_H	src/devices/ide.h	/^#define DEVICES_IDE_H$/;"	d
 DEVICES_INPUT_H	src/devices/input.h	/^#define DEVICES_INPUT_H$/;"	d
@@ -204,6 +206,9 @@ Elf32_Off	src/userprog/process.c	/^typedef uint32_t Elf32_Word, Elf32_Addr, Elf3
 Elf32_Phdr	src/userprog/process.c	/^struct Elf32_Phdr$/;"	s	file:
 Elf32_Word	src/userprog/process.c	/^typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;$/;"	t	typeref:typename:uint32_t	file:
 FCR_REG	src/devices/serial.c	/^#define FCR_REG /;"	d	file:
+FD_PIPE_READ	src/filesys/file.c	/^	FD_PIPE_READ,$/;"	e	enum:fd_type	file:
+FD_PIPE_WRITE	src/filesys/file.c	/^	FD_PIPE_WRITE$/;"	e	enum:fd_type	file:
+FD_REGULAR	src/filesys/file.c	/^	FD_REGULAR,$/;"	e	enum:fd_type	file:
 FILESYS_DIRECTORY_H	src/filesys/directory.h	/^#define FILESYS_DIRECTORY_H$/;"	d
 FILESYS_FILESYS_H	src/filesys/filesys.h	/^#define FILESYS_FILESYS_H$/;"	d
 FILESYS_FILE_H	src/filesys/file.h	/^#define FILESYS_FILE_H$/;"	d
@@ -295,6 +300,7 @@ MINUS	src/lib/stdio.c	/^        MINUS = 1 << 0,         \/* '-' *\/$/;"	e	enum:p
 MIN_ELEMS_PER_BUCKET	src/lib/kernel/hash.c	/^#define MIN_ELEMS_PER_BUCKET /;"	d	file:
 MS_REG	src/devices/serial.c	/^#define MS_REG /;"	d	file:
 Makefile	src/threads/build/Makefile	/^Makefile: $(SRCDIR)\/Makefile.build$/;"	t
+Makefile	src/userprog/build/Makefile	/^Makefile: $(SRCDIR)\/Makefile.build$/;"	t
 Max	src/tests/Algorithm/Diff.pm	/^sub Max {$/;"	s
 Min	src/tests/Algorithm/Diff.pm	/^sub Min {$/;"	s
 NAME_MAX	src/filesys/directory.h	/^#define NAME_MAX /;"	d
@@ -304,8 +310,11 @@ NO_INLINE	src/lib/debug.h	/^#define NO_INLINE /;"	d
 NO_RETURN	src/lib/debug.h	/^#define NO_RETURN /;"	d
 NO_RETURN	src/userprog/process.c	/^static thread_func start_process NO_RETURN;$/;"	v	typeref:typename:thread_func start_process	file:
 NULL	src/lib/stddef.h	/^#define NULL /;"	d
+NUM_ITER	src/tests/userprog/child-long.c	/^#define NUM_ITER /;"	d	file:
+NUM_ITER	src/tests/userprog/pipe-long.c	/^#define NUM_ITER /;"	d	file:
 Next	src/tests/Algorithm/Diff.pm	/^sub Next {$/;"	s
 OBJECTS	src/threads/build/Makefile	/^OBJECTS = $(patsubst %.c,%.o,$(patsubst %.S,%.o,$(SOURCES)))$/;"	m
+OBJECTS	src/userprog/build/Makefile	/^OBJECTS = $(patsubst %.c,%.o,$(patsubst %.S,%.o,$(SOURCES)))$/;"	m
 PACKED	src/lib/packed.h	/^#define PACKED /;"	d
 PACKED	src/lib/ustar.c	/^PACKED;$/;"	v	typeref:struct:ustar_header
 PAL_ASSERT	src/threads/palloc.h	/^    PAL_ASSERT = 001,           \/* Panic on failure. *\/$/;"	e	enum:palloc_flags
@@ -458,11 +467,13 @@ SIZET	src/lib/stdio.c	/^        SIZET = 8               \/* z *\/$/;"	e	enum:pri
 SIZE_MAX	src/lib/stdint.h	/^#define SIZE_MAX /;"	d
 SORT_SIZE	src/examples/bubsort.c	/^#define SORT_SIZE /;"	d	file:
 SOURCES	src/threads/build/Makefile	/^SOURCES = $(foreach dir,$(KERNEL_SUBDIRS),$($(dir)_SRC))$/;"	m
+SOURCES	src/userprog/build/Makefile	/^SOURCES = $(foreach dir,$(KERNEL_SUBDIRS),$($(dir)_SRC))$/;"	m
 SPACE	src/lib/stdio.c	/^        SPACE = 1 << 2,         \/* ' ' *\/$/;"	e	enum:printf_conversion::__anon90bc09760103	file:
 SPEAKER_GATE_ENABLE	src/devices/speaker.c	/^#define SPEAKER_GATE_ENABLE	/;"	d	file:
 SPEAKER_PORT_GATE	src/devices/speaker.c	/^#define SPEAKER_PORT_GATE	/;"	d	file:
 SRCDIR	src/examples/Makefile	/^SRCDIR = ..$/;"	m
 SRCDIR	src/threads/build/Makefile	/^SRCDIR = ..\/..$/;"	m
+SRCDIR	src/userprog/build/Makefile	/^SRCDIR = ..\/..$/;"	m
 STA_BSY	src/devices/ide.c	/^#define STA_BSY /;"	d	file:
 STA_DRDY	src/devices/ide.c	/^#define STA_DRDY /;"	d	file:
 STA_DRQ	src/devices/ide.c	/^#define STA_DRQ /;"	d	file:
@@ -484,6 +495,7 @@ SYS_MKDIR	src/lib/syscall-nr.h	/^    SYS_MKDIR,                  \/* Create a di
 SYS_MMAP	src/lib/syscall-nr.h	/^    SYS_MMAP,                   \/* Map a file into memory. *\/$/;"	e	enum:__anon65d9d4200103
 SYS_MUNMAP	src/lib/syscall-nr.h	/^    SYS_MUNMAP,                 \/* Remove a memory mapping. *\/$/;"	e	enum:__anon65d9d4200103
 SYS_OPEN	src/lib/syscall-nr.h	/^    SYS_OPEN,                   \/* Open a file. *\/$/;"	e	enum:__anon65d9d4200103
+SYS_PIPE	src/lib/syscall-nr.h	/^    SYS_PIPE,                   \/* Open a pair of pipe file descriptos *\/$/;"	e	enum:__anon65d9d4200103
 SYS_READ	src/lib/syscall-nr.h	/^    SYS_READ,                   \/* Read from a file. *\/$/;"	e	enum:__anon65d9d4200103
 SYS_READDIR	src/lib/syscall-nr.h	/^    SYS_READDIR,                \/* Reads a directory entry. *\/$/;"	e	enum:__anon65d9d4200103
 SYS_REMOVE	src/lib/syscall-nr.h	/^    SYS_REMOVE,                 \/* Delete a file. *\/$/;"	e	enum:__anon65d9d4200103
@@ -619,20 +631,27 @@ __umoddi3	src/lib/arithmetic.c	/^__umoddi3 (unsigned long long n, unsigned long 
 __vprintf	src/lib/stdio.c	/^__vprintf (const char *format, va_list args,$/;"	f	typeref:typename:void
 _end	src/threads/build/threads/kernel.lds.s	/^  _end = .;$/;"	d
 _end	src/threads/kernel.lds.S	/^  _end = .;$/;"	s
+_end	src/userprog/build/threads/kernel.lds.s	/^  _end = .;$/;"	d
 _end_bss	src/threads/build/threads/kernel.lds.s	/^  _end_bss = .;$/;"	d
 _end_bss	src/threads/kernel.lds.S	/^  _end_bss = .;$/;"	s
+_end_bss	src/userprog/build/threads/kernel.lds.s	/^  _end_bss = .;$/;"	d
 _end_kernel_text	src/threads/build/threads/kernel.lds.s	/^       _end_kernel_text = .; }$/;"	d
 _end_kernel_text	src/threads/kernel.lds.S	/^	      _end_kernel_text = .; }$/;"	s	section:.rodata
+_end_kernel_text	src/userprog/build/threads/kernel.lds.s	/^       _end_kernel_text = .; }$/;"	d
 _longestCommonSubsequence	src/tests/Algorithm/Diff.pm	/^sub _longestCommonSubsequence$/;"	s
 _replaceNextLargerWith	src/tests/Algorithm/Diff.pm	/^sub _replaceNextLargerWith$/;"	s
 _signature	src/threads/build/threads/kernel.lds.s	/^     _signature = .; LONG(0xaa55aa55) }$/;"	d
 _signature	src/threads/kernel.lds.S	/^	    _signature = .; LONG(0xaa55aa55) }$/;"	s	section:.data
+_signature	src/userprog/build/threads/kernel.lds.s	/^     _signature = .; LONG(0xaa55aa55) }$/;"	d
 _start	src/lib/user/entry.c	/^_start (int argc, char *argv[]) $/;"	f	typeref:typename:void
 _start	src/threads/build/threads/kernel.lds.s	/^  . = _start + SIZEOF_HEADERS;$/;"	d
 _start	src/threads/build/threads/kernel.lds.s	/^  _start = 0xc0000000 + 0x20000;$/;"	d
 _start	src/threads/kernel.lds.S	/^  _start = LOADER_PHYS_BASE + LOADER_KERN_BASE;$/;"	s
+_start	src/userprog/build/threads/kernel.lds.s	/^  . = _start + SIZEOF_HEADERS;$/;"	d
+_start	src/userprog/build/threads/kernel.lds.s	/^  _start = 0xc0000000 + 0x20000;$/;"	d
 _start_bss	src/threads/build/threads/kernel.lds.s	/^  _start_bss = .;$/;"	d
 _start_bss	src/threads/kernel.lds.S	/^  _start_bss = .;$/;"	s
+_start_bss	src/userprog/build/threads/kernel.lds.s	/^  _start_bss = .;$/;"	d
 _withPositionsOfInInterval	src/tests/Algorithm/Diff.pm	/^sub _withPositionsOfInInterval$/;"	s
 a	src/tests/threads/priority-donate-nest.c	/^    struct lock *a;$/;"	m	struct:locks	typeref:struct:lock *	file:
 a/bochs.h	src/misc/bochs-2.6.2-jitter-plus-segv.patch	/^--- a\/bochs.h$/;"	m
@@ -661,6 +680,7 @@ alarm_priority_thread	src/tests/threads/alarm-priority.c	/^alarm_priority_thread
 alarm_priority_thread	src/tests/threads/alarm-priority.c	/^static thread_func alarm_priority_thread;$/;"	v	typeref:typename:thread_func	file:
 all	src/Makefile	/^all::$/;"	t
 all	src/threads/build/Makefile	/^all: kernel.bin loader.bin$/;"	t
+all	src/userprog/build/Makefile	/^all: kernel.bin loader.bin$/;"	t
 all	src/utils/Makefile	/^all: setitimer-helper squish-pty squish-unix$/;"	t
 all_blocks	src/devices/block.c	/^static struct list all_blocks = LIST_INITIALIZER (all_blocks);$/;"	v	typeref:struct:list	file:
 all_list	src/threads/thread.c	/^static struct list all_list;$/;"	v	typeref:struct:list	file:
@@ -851,16 +871,20 @@ check_process_death	src/tests/vm/process_death.pm	/^sub check_process_death {$/;
 check_sector	src/devices/block.c	/^check_sector (struct block *block, block_sector_t sector)$/;"	f	typeref:typename:void	file:
 check_tell	src/tests/filesys/extended/grow-tell.c	/^check_tell (int fd, long ofs) $/;"	f	typeref:typename:void	file:
 checkf	src/tests/internal/stdio.c	/^checkf (const char *expect, const char *format, ...) $/;"	f	typeref:typename:void	file:
+child	src/threads/thread.h	/^   struct thread* child;$/;"	m	struct:process_descriptor	typeref:struct:thread *
 child_termination_mode	src/tests/userprog/no-vm/multi-oom.c	/^enum child_termination_mode { RECURSE, CRASH };$/;"	g	file:
+children	src/threads/thread.h	/^    struct list children;               \/* A list of procescs_descriptor* children *\/$/;"	m	struct:thread	typeref:struct:list
 chksum	src/lib/ustar.c	/^    char chksum[8];             \/* Sum of octets in header as octal string. *\/$/;"	m	struct:ustar_header	typeref:typename:char[8]	file:
 cksum	src/tests/cksum.c	/^cksum (const void *b_, size_t n)$/;"	f	typeref:typename:unsigned long
 cksum	src/tests/cksum.pm	/^sub cksum {$/;"	s
 cksum_file	src/tests/cksum.pm	/^sub cksum_file {$/;"	s
 clean	src/Makefile	/^clean::$/;"	t
 clean	src/threads/build/Makefile	/^clean::$/;"	t
+clean	src/userprog/build/Makefile	/^clean::$/;"	t
 clean	src/utils/Makefile	/^clean: $/;"	t
 clear_row	src/devices/vga.c	/^clear_row (size_t y) $/;"	f	typeref:typename:void	file:
 close	src/lib/user/syscall.c	/^close (int fd)$/;"	f	typeref:typename:void
+close	src/userprog/syscall.c	/^void close(int fd)$/;"	f	typeref:typename:void
 cls	src/devices/vga.c	/^cls (void)$/;"	f	typeref:typename:void	file:
 cmos_read	src/devices/rtc.c	/^cmos_read (uint8_t index)$/;"	f	typeref:typename:uint8_t	file:
 cmp_SRC	src/examples/Makefile	/^cmp_SRC = cmp.c$/;"	m
@@ -893,6 +917,7 @@ cpu	src/utils/pintos	/^cpu: ips=1000000$/;"	l
 cr3	src/userprog/tss.c	/^    uint32_t cr3;$/;"	m	struct:tss	typeref:typename:uint32_t	file:
 crctab	src/tests/cksum.c	/^static unsigned long crctab[] = {$/;"	v	typeref:typename:unsigned long[]	file:
 create	src/lib/user/syscall.c	/^create (const char *file, unsigned initial_size)$/;"	f	typeref:typename:bool
+create	src/userprog/syscall.c	/^bool create(const char* file, unsigned initial_size)$/;"	f	typeref:typename:bool
 cs	src/threads/interrupt.h	/^    uint16_t cs, :16;           \/* Code segment for eip. *\/$/;"	m	struct:intr_frame	typeref:typename:uint16_t
 cs	src/userprog/tss.c	/^    uint16_t cs, :16;$/;"	m	struct:tss	typeref:typename:uint16_t	file:
 cscope	src/Makefile	/^cscope:: cscope.files$/;"	t
@@ -917,6 +942,7 @@ descs	src/threads/malloc.c	/^static struct desc descs[10];   \/* Descriptors. *\
 dev_no	src/devices/ide.c	/^    int dev_no;                 \/* Device 0 or 1 for master or slave. *\/$/;"	m	struct:ata_disk	typeref:typename:int	file:
 devices	src/devices/ide.c	/^    struct ata_disk devices[2];     \/* The devices on this channel. *\/$/;"	m	struct:channel	typeref:struct:ata_disk[2]	file:
 devices_SRC	src/threads/build/Makefile	/^devices_SRC  = devices\/pit.c		# Programmable interrupt timer chip.$/;"	m
+devices_SRC	src/userprog/build/Makefile	/^devices_SRC  = devices\/pit.c		# Programmable interrupt timer chip.$/;"	m
 devmajor	src/lib/ustar.c	/^    char devmajor[8];           \/* Device major number as octal string. *\/$/;"	m	struct:ustar_header	typeref:typename:char[8]	file:
 devminor	src/lib/ustar.c	/^    char devminor[8];           \/* Device minor number as octal string. *\/$/;"	m	struct:ustar_header	typeref:typename:char[8]	file:
 diff	src/tests/Algorithm/Diff.pm	/^sub diff$/;"	s
@@ -995,6 +1021,7 @@ elem	src/lib/kernel/hash.h	/^    struct hash_elem *elem;     \/* Current hash el
 elem	src/tests/internal/list.c	/^    struct list_elem elem;      \/* List element. *\/$/;"	m	struct:value	typeref:struct:list_elem	file:
 elem	src/threads/synch.c	/^    struct list_elem elem;              \/* List element. *\/$/;"	m	struct:semaphore_elem	typeref:struct:list_elem	file:
 elem	src/threads/thread.h	/^    struct list_elem elem;              \/* List element. *\/$/;"	m	struct:thread	typeref:struct:list_elem
+elem	src/threads/thread.h	/^   struct list_elem elem;$/;"	m	struct:process_descriptor	typeref:struct:list_elem
 elem_cnt	src/lib/kernel/bitmap.c	/^elem_cnt (size_t bit_cnt)$/;"	f	typeref:typename:size_t	file:
 elem_cnt	src/lib/kernel/hash.h	/^    size_t elem_cnt;            \/* Number of elements in table. *\/$/;"	m	struct:hash	typeref:typename:size_t
 elem_idx	src/lib/kernel/bitmap.c	/^elem_idx (size_t bit_idx) $/;"	f	typeref:typename:size_t	file:
@@ -1015,9 +1042,13 @@ esp_dummy	src/threads/interrupt.h	/^    uint32_t esp_dummy;         \/* Not used
 exception_init	src/userprog/exception.c	/^exception_init (void) $/;"	f	typeref:typename:void
 exception_print_stats	src/userprog/exception.c	/^exception_print_stats (void) $/;"	f	typeref:typename:void
 exec	src/lib/user/syscall.c	/^exec (const char *file)$/;"	f	typeref:typename:pid_t
+exec	src/userprog/syscall.c	/^pid_t exec(const char* cmd_line) {$/;"	f	typeref:typename:pid_t
 exec_children	src/tests/lib.c	/^exec_children (const char *child_name, pid_t pids[], size_t child_cnt) $/;"	f	typeref:typename:void
+exec_sema	src/threads/thread.h	/^   struct semaphore exec_sema;$/;"	m	struct:process_descriptor	typeref:struct:semaphore
 exec_setitimer	src/utils/pintos	/^sub exec_setitimer {$/;"	s
 exit	src/lib/user/syscall.c	/^exit (int status)$/;"	f	typeref:typename:void
+exit_	src/userprog/syscall.c	/^void exit_(int status) {$/;"	f	typeref:typename:void
+exit_status	src/threads/thread.h	/^   int exit_status;$/;"	m	struct:process_descriptor	typeref:typename:int
 expecting_interrupt	src/devices/ide.c	/^    bool expecting_interrupt;   \/* True if an interrupt is expected, false if$/;"	m	struct:channel	typeref:typename:bool	file:
 extend_file	src/utils/pintos	/^sub extend_file {$/;"	s
 fail	src/tests/lib.c	/^fail (const char *format, ...) $/;"	f	typeref:typename:void
@@ -1028,6 +1059,9 @@ fail_io	src/utils/squish-unix.c	/^fail_io (const char *msg, ...)$/;"	f	typeref:t
 failure_cnt	src/tests/internal/stdio.c	/^static int failure_cnt;$/;"	v	typeref:typename:int	file:
 false	src/lib/stdbool.h	/^#define false	/;"	d
 fb	src/devices/vga.c	/^static uint8_t (*fb)[COL_CNT][2];$/;"	v	typeref:typename:uint8_t (*)[]	file:
+fd_type	src/filesys/file.c	/^    enum fd_type fd_type;	\/* Type of file*\/$/;"	m	struct:file	typeref:enum:fd_type	file:
+fd_type	src/filesys/file.c	/^enum fd_type$/;"	g	file:
+fdt	src/threads/thread.h	/^    struct file* fdt[64];               \/* File descriptor table. *\/$/;"	m	struct:thread	typeref:struct:file * [64]
 file	src/filesys/file.c	/^struct file $/;"	s	file:
 file_allow_write	src/filesys/file.c	/^file_allow_write (struct file *file) $/;"	f	typeref:typename:void
 file_close	src/filesys/file.c	/^file_close (struct file *file) $/;"	f	typeref:typename:void
@@ -1047,11 +1081,14 @@ file_tell	src/filesys/file.c	/^file_tell (struct file *file) $/;"	f	typeref:type
 file_write	src/filesys/file.c	/^file_write (struct file *file, const void *buffer, off_t size) $/;"	f	typeref:typename:off_t
 file_write_at	src/filesys/file.c	/^file_write_at (struct file *file, const void *buffer, off_t size,$/;"	f	typeref:typename:off_t
 filesize	src/lib/user/syscall.c	/^filesize (int fd) $/;"	f	typeref:typename:int
+filesize	src/userprog/syscall.c	/^int filesize(int fd)$/;"	f	typeref:typename:int
 filesys_SRC	src/threads/build/Makefile	/^filesys_SRC  = filesys\/filesys.c	# Filesystem core.$/;"	m
+filesys_SRC	src/userprog/build/Makefile	/^filesys_SRC  = filesys\/filesys.c	# Filesystem core.$/;"	m
 filesys_bdev_name	src/threads/init.c	/^static const char *filesys_bdev_name;$/;"	v	typeref:typename:const char *	file:
 filesys_create	src/filesys/filesys.c	/^filesys_create (const char *name, off_t initial_size) $/;"	f	typeref:typename:bool
 filesys_done	src/filesys/filesys.c	/^filesys_done (void) $/;"	f	typeref:typename:void
 filesys_init	src/filesys/filesys.c	/^filesys_init (bool format) $/;"	f	typeref:typename:void
+filesys_lock	src/userprog/syscall.c	/^static struct lock filesys_lock;$/;"	v	typeref:struct:lock	file:
 filesys_open	src/filesys/filesys.c	/^filesys_open (const char *name)$/;"	f	typeref:struct:file *
 filesys_remove	src/filesys/filesys.c	/^filesys_remove (const char *name) $/;"	f	typeref:typename:bool
 find_bucket	src/lib/kernel/hash.c	/^find_bucket (struct hash *h, struct hash_elem *e) $/;"	f	typeref:struct:list *	file:
@@ -1108,6 +1145,7 @@ get_core_output	src/tests/tests.pm	/^sub get_core_output {$/;"	s
 get_inumber	src/examples/pwd.c	/^get_inumber (const char *file_name, int *inum) $/;"	f	typeref:typename:bool	file:
 get_load_average	src/utils/pintos	/^sub get_load_average {$/;"	s
 get_min_wakeup_tick	src/threads/thread.c	/^int64_t get_min_wakeup_tick()$/;"	f	typeref:typename:int64_t
+get_next_fd	src/userprog/syscall.c	/^int get_next_fd()$/;"	f	typeref:typename:int
 get_scratch_file	src/utils/pintos	/^sub get_scratch_file {$/;"	s
 getcwd	src/examples/pwd.c	/^getcwd (char *cwd, size_t cwd_size) $/;"	f	typeref:typename:bool	file:
 gid	src/lib/ustar.c	/^    char gid[8];                \/* Group ID as octal string. *\/$/;"	m	struct:ustar_header	typeref:typename:char[8]	file:
@@ -1118,6 +1156,7 @@ gs	src/userprog/tss.c	/^    uint16_t gs, :16;$/;"	m	struct:tss	typeref:typename:
 h_thread_func	src/tests/threads/priority-donate-sema.c	/^h_thread_func (void *ls_) $/;"	f	typeref:typename:void	file:
 h_thread_func	src/tests/threads/priority-donate-sema.c	/^static thread_func h_thread_func;$/;"	v	typeref:typename:thread_func	file:
 halt	src/lib/user/syscall.c	/^halt (void) $/;"	f	typeref:typename:void
+halt	src/userprog/syscall.c	/^void halt() {$/;"	f	typeref:typename:void
 halt_SRC	src/examples/Makefile	/^halt_SRC = halt.c$/;"	m
 handle	src/lib/user/console.c	/^    int handle;         \/* Output file handle. *\/$/;"	m	struct:vhprintf_aux	typeref:typename:int	file:
 handle_error	src/utils/squish-pty.c	/^handle_error (ssize_t retval, int *fd, bool fd_is_pty, const char *call)$/;"	f	typeref:typename:void	file:
@@ -1187,6 +1226,7 @@ init_page_dir	src/threads/init.c	/^uint32_t *init_page_dir;$/;"	v	typeref:typena
 init_poll	src/devices/serial.c	/^init_poll (void) $/;"	f	typeref:typename:void	file:
 init_pool	src/threads/palloc.c	/^init_pool (struct pool *p, void *base, size_t page_cnt, const char *name) $/;"	f	typeref:typename:void	file:
 init_ram_pages	src/threads/start.S	/^init_ram_pages:$/;"	l
+init_stack	src/userprog/process.c	/^init_stack(int argc, char** argv, void **p) {$/;"	f	typeref:typename:void
 init_thread	src/threads/thread.c	/^init_thread (struct thread *t, const char *name, int priority)$/;"	f	typeref:typename:void	file:
 inited	src/lib/random.c	/^static bool inited;     $/;"	v	typeref:typename:bool	file:
 initial_thread	src/threads/thread.c	/^static struct thread *initial_thread;$/;"	v	typeref:struct:thread *	file:
@@ -1265,6 +1305,7 @@ irq	src/devices/ide.c	/^    uint8_t irq;                \/* Interrupt in use. *\
 is_all_zeros	src/lib/ustar.c	/^is_all_zeros (const char *block, size_t cnt)$/;"	f	typeref:typename:bool	file:
 is_ata	src/devices/ide.c	/^    bool is_ata;                \/* Is device an ATA disk? *\/$/;"	m	struct:ata_disk	typeref:typename:bool	file:
 is_dir	src/tests/tests.pm	/^sub is_dir {$/;"	s
+is_exited	src/threads/thread.h	/^   bool is_exited;$/;"	m	struct:process_descriptor	typeref:typename:bool
 is_head	src/lib/kernel/list.c	/^is_head (struct list_elem *elem)$/;"	f	typeref:typename:bool	file:
 is_interior	src/lib/kernel/list.c	/^is_interior (struct list_elem *elem)$/;"	f	typeref:typename:bool	file:
 is_kernel_vaddr	src/threads/vaddr.h	/^is_kernel_vaddr (const void *vaddr) $/;"	f	typeref:typename:bool
@@ -1299,7 +1340,10 @@ kbd_init	src/devices/kbd.c	/^kbd_init (void) $/;"	f	typeref:typename:void
 kbd_print_stats	src/devices/kbd.c	/^kbd_print_stats (void) $/;"	f	typeref:typename:void
 kernel.bin	src/threads/build/Makefile	/^kernel.bin: CPPFLAGS += -I$(SRCDIR)\/lib\/kernel$/;"	t
 kernel.bin	src/threads/build/Makefile	/^kernel.bin: kernel.o$/;"	t
+kernel.bin	src/userprog/build/Makefile	/^kernel.bin: CPPFLAGS += -I$(SRCDIR)\/lib\/kernel$/;"	t
+kernel.bin	src/userprog/build/Makefile	/^kernel.bin: kernel.o$/;"	t
 kernel.o	src/threads/build/Makefile	/^kernel.o: threads\/kernel.lds.s $(OBJECTS) $/;"	t
+kernel.o	src/userprog/build/Makefile	/^kernel.o: threads\/kernel.lds.s $(OBJECTS) $/;"	t
 kernel_pool	src/threads/palloc.c	/^static struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:pool	file:
 kernel_thread	src/threads/thread.c	/^kernel_thread (thread_func *function, void *aux) $/;"	f	typeref:typename:void	file:
 kernel_thread_frame	src/threads/thread.c	/^struct kernel_thread_frame $/;"	s	file:
@@ -1322,7 +1366,9 @@ length	src/filesys/inode.c	/^    off_t length;                       \/* File si
 length	src/lib/stdio.c	/^    int length;         \/* Length of output string. *\/$/;"	m	struct:vsnprintf_aux	typeref:typename:int	file:
 less	src/lib/kernel/hash.h	/^    hash_less_func *less;       \/* Comparison function. *\/$/;"	m	struct:hash	typeref:typename:hash_less_func *
 lib/kernel_SRC	src/threads/build/Makefile	/^lib\/kernel_SRC  = lib\/kernel\/debug.c	# Debug helpers.$/;"	m
+lib/kernel_SRC	src/userprog/build/Makefile	/^lib\/kernel_SRC  = lib\/kernel\/debug.c	# Debug helpers.$/;"	m
 lib_SRC	src/threads/build/Makefile	/^lib_SRC  = lib\/debug.c			# Debug helpers.$/;"	m
+lib_SRC	src/userprog/build/Makefile	/^lib_SRC  = lib\/debug.c			# Debug helpers.$/;"	m
 lineup_SRC	src/examples/Makefile	/^lineup_SRC = lineup.c$/;"	m
 linkname	src/lib/ustar.c	/^    char linkname[100];         \/* Name of link target.$/;"	m	struct:ustar_header	typeref:typename:char[100]	file:
 list	src/lib/kernel/list.h	/^struct list $/;"	s
@@ -1368,6 +1414,7 @@ load_thread	src/tests/threads/mlfqs-load-60.c	/^load_thread (void *aux UNUSED) $
 load_thread	src/tests/threads/mlfqs-load-avg.c	/^load_thread (void *seq_no_) $/;"	f	typeref:typename:void	file:
 loader	src/devices/partition.c	/^      uint8_t loader[446];      \/* Loader, in top-level partition table. *\/$/;"	m	struct:read_partition_table::partition_table	typeref:typename:uint8_t[446]	file:
 loader.bin	src/threads/build/Makefile	/^loader.bin: threads\/loader.o$/;"	t
+loader.bin	src/userprog/build/Makefile	/^loader.bin: threads\/loader.o$/;"	t
 locate_block_device	src/threads/init.c	/^locate_block_device (enum block_type role, const char *name)$/;"	f	typeref:typename:void	file:
 locate_block_devices	src/threads/init.c	/^locate_block_devices (void)$/;"	f	typeref:typename:void	file:
 lock	src/devices/ide.c	/^    struct lock lock;           \/* Must acquire to access the controller. *\/$/;"	m	struct:channel	typeref:struct:lock	file:
@@ -1422,7 +1469,9 @@ main	src/tests/filesys/extended/tar.c	/^main (int argc, char *argv[]) $/;"	f	typ
 main	src/tests/main.c	/^main (int argc UNUSED, char *argv[]) $/;"	f	typeref:typename:int
 main	src/tests/userprog/args.c	/^main (int argc, char *argv[]) $/;"	f	typeref:typename:int
 main	src/tests/userprog/child-close.c	/^main (int argc UNUSED, char *argv[]) $/;"	f	typeref:typename:int
+main	src/tests/userprog/child-long.c	/^int main(void) {$/;"	f	typeref:typename:int
 main	src/tests/userprog/child-rox.c	/^main (int argc UNUSED, char *argv[]) $/;"	f	typeref:typename:int
+main	src/tests/userprog/child-short.c	/^int main(void) {$/;"	f	typeref:typename:int
 main	src/tests/userprog/child-simple.c	/^main (void) $/;"	f	typeref:typename:int
 main	src/tests/userprog/multi-recurse.c	/^main (int argc UNUSED, char *argv[]) $/;"	f	typeref:typename:int
 main	src/tests/userprog/no-vm/multi-oom.c	/^main (int argc, char *argv[])$/;"	f	typeref:typename:int
@@ -1518,12 +1567,14 @@ ofs	src/utils/squish-pty.c	/^      size_t size, ofs;$/;"	m	struct:relay::pipe	ty
 ofs	src/utils/squish-unix.c	/^      size_t size, ofs;$/;"	m	struct:relay::pipe	typeref:typename:size_t	file:
 op	src/tests/threads/priority-fifo.c	/^    int **op;                   \/* Output buffer position. *\/$/;"	m	struct:simple_thread_data	typeref:typename:int **	file:
 open	src/lib/user/syscall.c	/^open (const char *file)$/;"	f	typeref:typename:int
+open	src/userprog/syscall.c	/^int open(const char* file)$/;"	f	typeref:typename:int
 open_cnt	src/filesys/inode.c	/^    int open_cnt;                       \/* Number of openers. *\/$/;"	m	struct:inode	typeref:typename:int	file:
 open_file	src/tests/tests.pm	/^sub open_file {$/;"	s
 open_inodes	src/filesys/inode.c	/^static struct list open_inodes;$/;"	v	typeref:struct:list	file:
 ops	src/devices/block.c	/^    const struct block_operations *ops;  \/* Driver operations. *\/$/;"	m	struct:block	typeref:typename:const struct block_operations *	file:
 orig/bochs-2.1.1/gui/Makefile.in	src/misc/bochs-2.2.6-ms-extensions.patch	/^--- orig\/bochs-2.1.1\/gui\/Makefile.in	2003-11-28 07:07:28.000000000 -0800$/;"	m
 os.dsk	src/threads/build/Makefile	/^os.dsk: kernel.bin$/;"	t
+os.dsk	src/userprog/build/Makefile	/^os.dsk: kernel.bin$/;"	t
 out	src/utils/squish-pty.c	/^      int in, out;$/;"	m	struct:relay::pipe	typeref:typename:int	file:
 out	src/utils/squish-unix.c	/^      int in, out;$/;"	m	struct:relay::pipe	typeref:typename:int	file:
 outb	src/threads/io.h	/^outb (uint16_t port, uint8_t data)$/;"	f	typeref:typename:void
@@ -1589,6 +1640,7 @@ partition_write	src/devices/partition.c	/^partition_write (void *p_, block_secto
 partitions	src/devices/partition.c	/^      struct partition_table_entry partitions[4];       \/* Table entries. *\/$/;"	m	struct:read_partition_table::partition_table	typeref:struct:partition_table_entry[4]	file:
 pass	src/tests/tests.pm	/^sub pass {$/;"	s
 pass	src/tests/threads/tests.c	/^pass (void) $/;"	f	typeref:typename:void
+pd	src/threads/thread.h	/^    struct process_descriptor* pd;      \/* Process descriptor for parent\/child relationship *\/$/;"	m	struct:thread	typeref:struct:process_descriptor *
 pd_no	src/threads/pte.h	/^static inline uintptr_t pd_no (const void *va) {$/;"	f	typeref:typename:uintptr_t
 pde_create	src/threads/pte.h	/^static inline uint32_t pde_create (uint32_t *pt) {$/;"	f	typeref:typename:uint32_t
 pde_get_pt	src/threads/pte.h	/^static inline uint32_t *pde_get_pt (uint32_t pde) {$/;"	f	typeref:typename:uint32_t *
@@ -1600,6 +1652,9 @@ pic_end_of_interrupt	src/threads/interrupt.c	/^pic_end_of_interrupt (int irq) $/
 pic_init	src/threads/interrupt.c	/^pic_init (void)$/;"	f	typeref:typename:void	file:
 pick_pivot	src/tests/vm/qsort.c	/^pick_pivot (unsigned char *buf, size_t size) $/;"	f	typeref:typename:unsigned char	file:
 pid_t	src/lib/user/syscall.h	/^typedef int pid_t;$/;"	t	typeref:typename:int
+pid_t	src/threads/thread.h	/^typedef int pid_t;$/;"	t	typeref:typename:int
+pipe	src/lib/user/syscall.c	/^pipe (int *fds)$/;"	f	typeref:typename:int
+pipe	src/userprog/syscall.c	/^int pipe(int* fds)$/;"	f	typeref:typename:int
 pipe	src/utils/squish-pty.c	/^  struct pipe $/;"	s	function:relay	file:
 pipe	src/utils/squish-unix.c	/^  struct pipe $/;"	s	function:relay	file:
 pit_configure_channel	src/devices/pit.c	/^pit_configure_channel (int channel, int mode, int frequency)$/;"	f	typeref:typename:void
@@ -1627,9 +1682,10 @@ priority_condvar_thread	src/tests/threads/priority-condvar.c	/^static thread_fun
 priority_sema_thread	src/tests/threads/priority-sema.c	/^priority_sema_thread (void *aux UNUSED) $/;"	f	typeref:typename:void	file:
 priority_sema_thread	src/tests/threads/priority-sema.c	/^static thread_func priority_sema_thread;$/;"	v	typeref:typename:thread_func	file:
 process_activate	src/userprog/process.c	/^process_activate (void)$/;"	f	typeref:typename:void
-process_execute	src/userprog/process.c	/^process_execute (const char *file_name) $/;"	f	typeref:typename:tid_t
+process_descriptor	src/threads/thread.h	/^struct process_descriptor {$/;"	s
+process_execute	src/userprog/process.c	/^process_execute (const char *command_line_input) $/;"	f	typeref:typename:tid_t
 process_exit	src/userprog/process.c	/^process_exit (void)$/;"	f	typeref:typename:void
-process_wait	src/userprog/process.c	/^process_wait (tid_t child_tid UNUSED) $/;"	f	typeref:typename:int
+process_wait	src/userprog/process.c	/^process_wait (tid_t child_tid) $/;"	f	typeref:typename:int
 pt_no	src/threads/pte.h	/^static inline unsigned pt_no (const void *va) {$/;"	f	typeref:typename:unsigned
 pte_create_kernel	src/threads/pte.h	/^static inline uint32_t pte_create_kernel (void *page, bool writable) {$/;"	f	typeref:typename:uint32_t
 pte_create_user	src/threads/pte.h	/^static inline uint32_t pte_create_user (void *page, bool writable) {$/;"	f	typeref:typename:uint32_t
@@ -1671,6 +1727,7 @@ random_ulong	src/tests/random.pm	/^sub random_ulong {$/;"	s
 rcount	src/threads/synch.h	/^    unsigned rcount; $/;"	m	struct:rw_semaphore	typeref:typename:unsigned
 read	src/devices/block.h	/^    void (*read) (void *aux, block_sector_t, void *buffer);$/;"	m	struct:block_operations	typeref:typename:void (*)(void * aux,block_sector_t,void * buffer)
 read	src/lib/user/syscall.c	/^read (int fd, void *buffer, unsigned size)$/;"	f	typeref:typename:int
+read	src/userprog/syscall.c	/^int read(int fd, const void *buffer, unsigned size)$/;"	f	typeref:typename:int
 read_cnt	src/devices/block.c	/^    unsigned long long read_cnt;        \/* Number of sectors read. *\/$/;"	m	struct:block	typeref:typename:unsigned long long	file:
 read_command_line	src/threads/init.c	/^read_command_line (void) $/;"	f	typeref:typename:char **	file:
 read_failed	src/threads/loader.S	/^read_failed:$/;"	l
@@ -1712,6 +1769,7 @@ relay	src/utils/squish-unix.c	/^relay (int sock) $/;"	f	typeref:typename:void	fi
 relay_signal	src/utils/pintos	/^sub relay_signal {$/;"	s
 release_console	src/lib/kernel/console.c	/^release_console (void) $/;"	f	typeref:typename:void	file:
 remove	src/lib/user/syscall.c	/^remove (const char *file)$/;"	f	typeref:typename:bool
+remove	src/userprog/syscall.c	/^bool remove(const char* file)$/;"	f	typeref:typename:bool
 remove_elem	src/lib/kernel/hash.c	/^remove_elem (struct hash *h, struct hash_elem *e) $/;"	f	typeref:typename:void	file:
 remove_tree	src/tests/filesys/extended/dir-rm-tree.c	/^remove_tree (int at, int bt, int ct, int dt) $/;"	f	typeref:typename:void	file:
 removed	src/filesys/inode.c	/^    bool removed;                       \/* True if deleted, false otherwise. *\/$/;"	m	struct:inode	typeref:typename:bool	file:
@@ -1733,6 +1791,7 @@ run_qemu	src/utils/pintos	/^sub run_qemu {$/;"	s
 run_task	src/threads/init.c	/^run_task (char **argv)$/;"	f	typeref:typename:void	file:
 run_test	src/tests/threads/tests.c	/^run_test (const char *name) $/;"	f	typeref:typename:void
 run_vm	src/utils/pintos	/^sub run_vm {$/;"	s
+running_file	src/threads/thread.h	/^    struct file* running_file;	        \/*The file containing the program\/executable *\/$/;"	m	struct:thread	typeref:struct:file *
 running_thread	src/threads/thread.c	/^running_thread (void) $/;"	f	typeref:struct:thread *
 rw_semaphore	src/threads/synch.h	/^struct rw_semaphore$/;"	s
 rwsema_init	src/threads/synch.c	/^void rwsema_init(struct rw_semaphore* rwsema)$/;"	f	typeref:typename:void
@@ -1748,6 +1807,7 @@ sdiv64	src/lib/arithmetic.c	/^sdiv64 (int64_t n, int64_t d)$/;"	f	typeref:typena
 second	src/tests/threads/priority-donate-chain.c	/^    struct lock *second;$/;"	m	struct:lock_pair	typeref:struct:lock *	file:
 sector	src/filesys/inode.c	/^    block_sector_t sector;              \/* Sector number of disk location. *\/$/;"	m	struct:inode	typeref:typename:block_sector_t	file:
 seek	src/lib/user/syscall.c	/^seek (int fd, unsigned position) $/;"	f	typeref:typename:void
+seek	src/userprog/syscall.c	/^void seek(int fd, unsigned position)$/;"	f	typeref:typename:void
 seg_class	src/userprog/gdt.c	/^enum seg_class$/;"	g	file:
 seg_granularity	src/userprog/gdt.c	/^enum seg_granularity$/;"	g	file:
 select_device	src/devices/ide.c	/^select_device (const struct ata_disk *d)$/;"	f	typeref:typename:void	file:
@@ -1846,7 +1906,7 @@ start	src/tests/threads/alarm-wait.c	/^    int64_t start;              \/* Curre
 start	src/threads/loader.S	/^start:$/;"	l
 start	src/threads/start.S	/^start:$/;"	l
 start_chs	src/devices/partition.c	/^      uint8_t start_chs[3];     \/* Encoded starting cylinder, head, sector. *\/$/;"	m	struct:read_partition_table::partition_table_entry	typeref:typename:uint8_t[3]	file:
-start_process	src/userprog/process.c	/^start_process (void *file_name_)$/;"	f	typeref:typename:void	file:
+start_process	src/userprog/process.c	/^start_process (void *command_line_input_)$/;"	f	typeref:typename:void	file:
 start_time	src/tests/threads/mlfqs-fair.c	/^    int64_t start_time;$/;"	m	struct:thread_info	typeref:typename:int64_t	file:
 start_time	src/tests/threads/mlfqs-load-60.c	/^static int64_t start_time;$/;"	v	typeref:typename:int64_t	file:
 start_time	src/tests/threads/mlfqs-load-avg.c	/^static int64_t start_time;$/;"	v	typeref:typename:int64_t	file:
@@ -1884,12 +1944,13 @@ syscall0	src/lib/user/syscall.c	/^#define syscall0(/;"	d	file:
 syscall1	src/lib/user/syscall.c	/^#define syscall1(/;"	d	file:
 syscall2	src/lib/user/syscall.c	/^#define syscall2(/;"	d	file:
 syscall3	src/lib/user/syscall.c	/^#define syscall3(/;"	d	file:
-syscall_handler	src/userprog/syscall.c	/^syscall_handler (struct intr_frame *f UNUSED) $/;"	f	typeref:typename:void	file:
+syscall_handler	src/userprog/syscall.c	/^syscall_handler (struct intr_frame *f) $/;"	f	typeref:typename:void	file:
 syscall_init	src/userprog/syscall.c	/^syscall_init (void) $/;"	f	typeref:typename:void
 tags	src/Makefile	/^tags::$/;"	t
 tail	src/devices/intq.h	/^    int tail;                   \/* Old data is read here. *\/$/;"	m	struct:intq	typeref:typename:int
 tail	src/lib/kernel/list.h	/^    struct list_elem tail;      \/* List tail. *\/$/;"	m	struct:list	typeref:struct:list_elem
 tell	src/lib/user/syscall.c	/^tell (int fd) $/;"	f	typeref:typename:unsigned
+tell	src/userprog/syscall.c	/^unsigned int tell(int fd)$/;"	f	typeref:typename:unsigned int
 test	src/tests/internal/list.c	/^test (void) $/;"	f	typeref:typename:void
 test	src/tests/internal/stdio.c	/^test (void) $/;"	f	typeref:typename:void
 test	src/tests/internal/stdlib.c	/^test (void) $/;"	f	typeref:typename:void
@@ -1959,6 +2020,12 @@ test_main	src/tests/userprog/open-missing.c	/^test_main (void) $/;"	f	typeref:ty
 test_main	src/tests/userprog/open-normal.c	/^test_main (void) $/;"	f	typeref:typename:void
 test_main	src/tests/userprog/open-null.c	/^test_main (void) $/;"	f	typeref:typename:void
 test_main	src/tests/userprog/open-twice.c	/^test_main (void) $/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-bad-read.c	/^test_main(void)$/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-bad-write.c	/^test_main(void)$/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-long.c	/^test_main(void)$/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-rw-close.c	/^test_main(void)$/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-short.c	/^test_main(void)$/;"	f	typeref:typename:void
+test_main	src/tests/userprog/pipe-wr-close.c	/^test_main(void)$/;"	f	typeref:typename:void
 test_main	src/tests/userprog/read-bad-fd.c	/^test_main (void) $/;"	f	typeref:typename:void
 test_main	src/tests/userprog/read-bad-ptr.c	/^test_main (void) $/;"	f	typeref:typename:void
 test_main	src/tests/userprog/read-boundary.c	/^test_main (void) $/;"	f	typeref:typename:void
@@ -2087,11 +2154,16 @@ thread_unblock	src/threads/thread.c	/^thread_unblock (struct thread *t) $/;"	f	t
 thread_yield	src/threads/thread.c	/^thread_yield (void) $/;"	f	typeref:typename:void
 threads/kernel.lds.s	src/threads/build/Makefile	/^threads\/kernel.lds.s: CPPFLAGS += -P$/;"	t
 threads/kernel.lds.s	src/threads/build/Makefile	/^threads\/kernel.lds.s: threads\/kernel.lds.S threads\/loader.h$/;"	t
+threads/kernel.lds.s	src/userprog/build/Makefile	/^threads\/kernel.lds.s: CPPFLAGS += -P$/;"	t
+threads/kernel.lds.s	src/userprog/build/Makefile	/^threads\/kernel.lds.s: threads\/kernel.lds.S threads\/loader.h$/;"	t
 threads/loader.o	src/threads/build/Makefile	/^threads\/loader.o: threads\/loader.S$/;"	t
+threads/loader.o	src/userprog/build/Makefile	/^threads\/loader.o: threads\/loader.S$/;"	t
 threads_SRC	src/threads/build/Makefile	/^threads_SRC  = threads\/start.S		# Startup code.$/;"	m
+threads_SRC	src/userprog/build/Makefile	/^threads_SRC  = threads\/start.S		# Startup code.$/;"	m
 tick_count	src/tests/threads/mlfqs-fair.c	/^    int tick_count;$/;"	m	struct:thread_info	typeref:typename:int	file:
 ticks	src/devices/timer.c	/^static int64_t ticks;$/;"	v	typeref:typename:int64_t	file:
 tid	src/threads/thread.h	/^    tid_t tid;                          \/* Thread identifier. *\/$/;"	m	struct:thread	typeref:typename:tid_t
+tid	src/threads/thread.h	/^   tid_t tid;$/;"	m	struct:process_descriptor	typeref:typename:tid_t
 tid_lock	src/threads/thread.c	/^static struct lock tid_lock;$/;"	v	typeref:struct:lock	file:
 tid_t	src/threads/thread.h	/^typedef int tid_t;$/;"	t	typeref:typename:int
 time_t	src/devices/rtc.h	/^typedef unsigned long time_t;$/;"	t	typeref:typename:unsigned long
@@ -2154,6 +2226,7 @@ user_page_limit	src/threads/init.c	/^static size_t user_page_limit = SIZE_MAX;$/
 user_pool	src/threads/palloc.c	/^static struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:pool	file:
 user_ticks	src/threads/thread.c	/^static long long user_ticks;    \/* # of timer ticks in user programs. *\/$/;"	v	typeref:typename:long long	file:
 userprog_SRC	src/threads/build/Makefile	/^userprog_SRC  = userprog\/process.c	# Process loading.$/;"	m
+userprog_SRC	src/userprog/build/Makefile	/^userprog_SRC  = userprog\/process.c	# Process loading.$/;"	m
 ustar_header	src/lib/ustar.c	/^struct ustar_header$/;"	s	file:
 ustar_make_header	src/lib/ustar.c	/^ustar_make_header (const char *file_name, enum ustar_type type,$/;"	f	typeref:typename:bool
 ustar_parse_header	src/lib/ustar.c	/^ustar_parse_header (const char header[USTAR_HEADER_SIZE],$/;"	f	typeref:typename:const char *
@@ -2163,6 +2236,7 @@ va_copy	src/lib/stdarg.h	/^#define va_copy(/;"	d
 va_end	src/lib/stdarg.h	/^#define va_end(/;"	d
 va_list	src/lib/stdarg.h	/^typedef __builtin_va_list va_list;$/;"	t	typeref:typename:__builtin_va_list
 va_start	src/lib/stdarg.h	/^#define va_start(/;"	d
+validate_pointer	src/userprog/syscall.c	/^bool validate_pointer(const void* pointer)$/;"	f	typeref:typename:bool
 validate_segment	src/userprog/process.c	/^validate_segment (const struct Elf32_Phdr *phdr, struct file *file) $/;"	f	typeref:typename:bool	file:
 value	src/tests/internal/list.c	/^    int value;                  \/* Item value. *\/$/;"	m	struct:value	typeref:typename:int	file:
 value	src/tests/internal/list.c	/^struct value $/;"	s	file:
@@ -2209,19 +2283,22 @@ w_thread_func	src/tests/threads/seqlock5.c	/^w_thread_func (void *ls_) $/;"	f	ty
 w_thread_func	src/tests/threads/seqlock6.c	/^w_thread_func (void *ls_) $/;"	f	typeref:typename:void	file:
 wait	src/devices/intq.c	/^wait (struct intq *q UNUSED, struct thread **waiter) $/;"	f	typeref:typename:void	file:
 wait	src/lib/user/syscall.c	/^wait (pid_t pid)$/;"	f	typeref:typename:int
+wait	src/userprog/syscall.c	/^int wait(pid_t pid) {$/;"	f	typeref:typename:int
 wait_children	src/tests/lib.c	/^wait_children (pid_t pids[], size_t child_cnt) $/;"	f	typeref:typename:void
 wait_sema	src/tests/threads/alarm-priority.c	/^static struct semaphore wait_sema;$/;"	v	typeref:struct:semaphore	file:
+wait_sema	src/threads/thread.h	/^   struct semaphore wait_sema;$/;"	m	struct:process_descriptor	typeref:struct:semaphore
 wait_until_idle	src/devices/ide.c	/^wait_until_idle (const struct ata_disk *d) $/;"	f	typeref:typename:void	file:
 wait_while_busy	src/devices/ide.c	/^wait_while_busy (const struct ata_disk *d) $/;"	f	typeref:typename:bool	file:
 waiters	src/threads/synch.h	/^    struct list waiters;        \/* List of waiting threads. *\/$/;"	m	struct:condition	typeref:struct:list
 waiters	src/threads/synch.h	/^    struct list waiters;        \/* List of waiting threads. *\/$/;"	m	struct:semaphore	typeref:struct:list
 wake_time	src/tests/threads/alarm-priority.c	/^static int64_t wake_time;$/;"	v	typeref:typename:int64_t	file:
 wakeup	src/threads/thread.c	/^void wakeup()$/;"	f	typeref:typename:void
-wakeup_tick	src/threads/thread.h	/^    int64_t wakeup_tick;		\/* Tick till wake up.  *\/$/;"	m	struct:thread	typeref:typename:int64_t
+wakeup_tick	src/threads/thread.h	/^    int64_t wakeup_tick;	        \/* Tick till wake up.  *\/$/;"	m	struct:thread	typeref:typename:int64_t
 width	src/lib/stdio.c	/^    int width;$/;"	m	struct:printf_conversion	typeref:typename:int	file:
 wrap_open	src/tests/filesys/extended/dir-rm-cwd.c	/^wrap_open (const char *name) $/;"	f	typeref:typename:int	file:
 write	src/devices/block.h	/^    void (*write) (void *aux, block_sector_t, const void *buffer);$/;"	m	struct:block_operations	typeref:typename:void (*)(void * aux,block_sector_t,const void * buffer)
 write	src/lib/user/syscall.c	/^write (int fd, const void *buffer, unsigned size)$/;"	f	typeref:typename:int
+write	src/userprog/syscall.c	/^int write(int fd, const void *buffer, unsigned size) {$/;"	f	typeref:typename:int
 write_cnt	src/devices/block.c	/^    unsigned long long write_cnt;       \/* Number of sectors written. *\/$/;"	m	struct:block	typeref:typename:unsigned long long	file:
 write_cnt	src/lib/kernel/console.c	/^static int64_t write_cnt;$/;"	v	typeref:typename:int64_t	file:
 write_fully	src/utils/Pintos.pm	/^sub write_fully {$/;"	s

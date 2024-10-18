@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include "userprog/process.h"
 #include "threads/malloc.h"
+#include "pipe.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -184,8 +185,11 @@ int write(int fd, const void *buffer, unsigned size) {
   struct thread* cur = thread_current();
 
   if (fd == 0) exit_(-1);
+  
+  if(fd == cur->pipe_write_fd)
+	  return pipe_write(cur->pipe_write, buffer,size);
 
-  if (fd == 1) {
+  if (fd == 1 && cur->pipe_write_fd != 1) {
     lock_acquire(&filesys_lock);
     putbuf(buffer, size);
     lock_release(&filesys_lock);
@@ -242,7 +246,10 @@ int read(int fd, const void *buffer, unsigned size)
 
   if (fd == 1) exit_(-1);
 
-  if (fd == 0) {
+  if(fd == cur->pipe_read_fd)
+	  return pipe_read(cur->pipe_read, buffer,size);
+
+  if (fd == 0 && cur->pipe_read_fd != 0) {
     lock_acquire(&filesys_lock);
     input_getc();
     lock_release(&filesys_lock);
@@ -349,6 +356,19 @@ void close(int fd)
 	struct thread* cur = thread_current();
 
   if (fd == 0 || fd == 1) exit_(-1);
+  if(fd == cur->pipe_read_fd)
+  {
+	  cur->pipe_read_fd = -1;
+	  palloc_free_page(cur->pipe_read->buffer);
+	  cur->pipe_read = NULL;
+  }
+  else if(fd == cur->pipe_write_fd)
+  {
+	  cur->pipe_write_fd = -1;
+	  palloc_free_page(cur->pipe_write->buffer);
+	  cur->pipe_write = NULL;
+  }
+ 
   else {
     if(cur->fdt[fd] == NULL)
 		  return;
@@ -365,10 +385,16 @@ int pipe(int* fds)
 		exit_(-1);
 
 	struct thread* cur = thread_current();
-	
+	int pipe_read = get_next_fd();
+	int pipe_write = get_next_fd();
 
-
-
-	//TODO create a buffer for the pipe and make it circular
-	return -1;
+	if(pipe_read == -1 || pipe_write == -1)
+		return -1;	
+	fds[0] = pipe_read;
+	fds[1] = pipe_write;
+	cur->pipe_read_fd = pipe_read;
+	cur->pipe_write_fd = pipe_write;
+	pipe_init(cur->pipe_read);
+	pipe_init(cur->pipe_write);
+	return 0;
 }
