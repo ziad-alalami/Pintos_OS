@@ -218,7 +218,8 @@ thread_create (const char *name, int priority,
   pd->exit_status = -1;
   pd->is_exited = false;
   pd->tid = tid;
-  sema_init(&pd->sema, 0);
+  sema_init(&pd->exec_sema, 0);
+  sema_init(&pd->wait_sema, 0);
   t->pd = pd;
 
   list_push_back(&parent->children, &pd->elem);

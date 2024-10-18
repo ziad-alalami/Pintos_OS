@@ -88,12 +88,12 @@ start_process (void *command_line_input_)
   if (!success) {
     cur->pd->tid = -1;
     cur->pd->is_exited = true;
-    sema_up(&cur->pd->sema);
+    sema_up(&cur->pd->exec_sema);
     palloc_free_page (command_line_input);
     thread_exit ();
   }
 
-  sema_up(&cur->pd->sema);
+  sema_up(&cur->pd->exec_sema);
 
   init_stack(argc, argv, &if_.esp);
   // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
@@ -181,13 +181,13 @@ process_wait (tid_t child_tid)
 
   struct process_descriptor* child = list_entry(child_elem, struct process_descriptor, elem);
 
-  if (!child->is_exited)
-    sema_down(&child->sema);
+  if (!child->is_exited) {
+    sema_down(&child->wait_sema);
+  }
 
   int exit_status = child->exit_status;
   list_remove(child_elem);
   free(child);
-
   return exit_status;
 }
 

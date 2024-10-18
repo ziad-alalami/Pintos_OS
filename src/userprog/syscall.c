@@ -30,6 +30,8 @@ syscall_handler (struct intr_frame *f)
 {
   int syscall_num = *((int*)f->esp);
 
+  // Address of first argument - may or may not be used
+  void* addr1 = f->esp + sizeof(int);
   switch (syscall_num) {
     case SYS_HALT:
       {
@@ -38,85 +40,104 @@ syscall_handler (struct intr_frame *f)
       }
     case SYS_EXIT:
       {
-      int status = *(int*)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      int status = *(int*)(addr1);
       exit_(status);
       break;
       }
     case SYS_EXEC:
       {
-      char* cmd_line = *(char**)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      char* cmd_line = *(char**)(addr1);
       f->eax = exec(cmd_line);
       break;
       }
     case SYS_WAIT:
       {
-      pid_t pid = *(pid_t*)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      pid_t pid = *(pid_t*)(addr1);
       f->eax = wait(pid);
       break;
       }
     case SYS_CREATE:
       {
-      const char *file = *(char **)(f->esp + sizeof(int));
-      unsigned initial_size = *(unsigned *)(f->esp + sizeof(int) + sizeof(char*));
+      void* addr2 = addr1 + sizeof(char*);
+      if (!validate_pointer(addr1) || !validate_pointer(addr2)) exit_(-1);
+      const char *file = *(char **)(addr1);
+      unsigned initial_size = *(unsigned *)(addr2);
       f->eax = create(file, initial_size);
       break;
       }
     case SYS_REMOVE:
       {
-      const char* file = *(char **)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      const char* file = *(char **)(addr1);
       f->eax = remove(file);
       break;
       }
     case SYS_OPEN:
       {
-      const char* file = *(char **)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      const char* file = *(char **)(addr1);
       f->eax = open(file);
       break;
       }
     case SYS_FILESIZE:
       {
-      int fd = *(int*)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      int fd = *(int*)(addr1);
       f->eax = filesize(fd);
       break;
       }
     case SYS_READ:
       {
-      int fd = *(int*)(f->esp + sizeof(int));
-      const void* buffer = *(void**)(f->esp + 2 * sizeof(int));
-      unsigned size = *(unsigned*)(f->esp + 2 * sizeof(int) + sizeof(void*));
+      void* addr2 = addr1 + sizeof(int);
+      void* addr3 = addr2 + sizeof(void*);
+      if (!validate_pointer(addr1) || !validate_pointer(addr2) || !validate_pointer(addr3)) exit_(-1);
+      int fd = *(int*)(addr1);
+      const void* buffer = *(void**)(addr2);
+      unsigned size = *(unsigned*)(addr3);
       f->eax = read(fd, buffer, size);
       break;
       }
     case SYS_WRITE:
       {
-      int fd = *(int*)(f->esp + sizeof(int));
-      const void* buffer = *(void**)(f->esp + 2 * sizeof(int));
-      unsigned size = *(unsigned*)(f->esp + 2 * sizeof(int) + sizeof(void*));
+      void* addr2 = addr1 + sizeof(int);
+      void* addr3 = addr2 + sizeof(void*);
+      if (!validate_pointer(addr1) || !validate_pointer(addr2) || !validate_pointer(addr3)) exit_(-1);
+      int fd = *(int*)(addr1);
+      const void* buffer = *(void**)(addr2);
+      unsigned size = *(unsigned*)(addr3);
       f->eax = write(fd, buffer, size);
       break;
       }
     case SYS_SEEK:
       {
-      int fd = *(int*) (f->esp + sizeof(int));
-      unsigned position = *(unsigned*)(f->esp + 2 * sizeof(int));
+      void* addr2 = addr1 + sizeof(int);
+      if (!validate_pointer(addr1) || !validate_pointer(addr2)) exit_(-1);
+      int fd = *(int*) (addr1);
+      unsigned position = *(unsigned*)(addr2);
       seek(fd, position);
       break;
       }
     case SYS_TELL:
       {
-      int fd = *(int*)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      int fd = *(int*)(addr1);
       f->eax = tell(fd);
       break;
       }
     case SYS_CLOSE:
       {
-      int fd = *(int*)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      int fd = *(int*)(addr1);
       close(fd);
       break;
       }
     case SYS_PIPE:
       {
-      int* fds = *(int **)(f->esp + sizeof(int));
+      if (!validate_pointer(addr1)) exit_(-1);
+      int* fds = *(int **)(addr1);
       f->eax= pipe(fds);
       break;
       }
@@ -154,7 +175,7 @@ void exit_(int status) {
   if (cur->pd != NULL) {
     cur->pd->exit_status = status;
     cur->pd->is_exited = true;
-    sema_up(&cur->pd->sema);
+    sema_up(&cur->pd->wait_sema);
   }
   printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
@@ -204,7 +225,7 @@ pid_t exec(const char* cmd_line) {
 
   struct process_descriptor* child = list_entry(child_elem, struct process_descriptor, elem);
 
-  sema_down(&child->sema);
+  sema_down(&child->exec_sema);
 
   // Return child->tid as it will be updated to -1 if loading fails
   return child->tid;

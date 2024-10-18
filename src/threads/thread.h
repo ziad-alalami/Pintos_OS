@@ -31,7 +31,8 @@ struct process_descriptor {
    int exit_status;
    bool is_exited;
    tid_t tid;
-   struct semaphore sema;
+   struct semaphore exec_sema;
+   struct semaphore wait_sema;
    struct thread* child;
    struct list_elem elem;
 };
