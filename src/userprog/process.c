@@ -30,6 +30,7 @@ tid_t
 process_execute (const char *command_line_input) 
 {
   char *fn_copy;
+  char *fn_name_copy;
   tid_t tid;
 
   /* Make a copy of FILE_NAME.
@@ -38,12 +39,18 @@ process_execute (const char *command_line_input)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, command_line_input, PGSIZE);
+  // Make a second copy to extract the name from
+  fn_name_copy = palloc_get_page (0);
+  if (fn_name_copy == NULL)
+    return TID_ERROR;
+  strlcpy (fn_name_copy, command_line_input, PGSIZE);
 
   char* saveptr;
-  char* file_name = strtok_r(command_line_input, " ", &saveptr);
+  char* file_name = strtok_r(fn_name_copy, " ", &saveptr);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  palloc_free_page(fn_name_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   return tid;
@@ -198,6 +205,8 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
+  file_close(cur->running_file);
+
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -329,6 +338,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
   file_deny_write(file);
+  t->running_file = file;
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -413,7 +423,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
   return success;
 }
 
