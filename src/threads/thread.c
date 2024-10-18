@@ -557,8 +557,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   memset (t->fdt, 0, sizeof(t->fdt));
   t->magic = THREAD_MAGIC;
-  t->stdin_closed = false;
-  t->stdout_closed = false; 
   list_init(&t->children);
   t->pd = NULL; // Will be initialized in thread_create
 

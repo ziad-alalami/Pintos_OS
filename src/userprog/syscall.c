@@ -156,10 +156,6 @@ bool validate_pointer(const void* pointer)
 int get_next_fd()
 {
 	struct thread* cur = thread_current();
-	if(cur->stdin_closed && cur->fdt[0] == NULL)
-		return 0;
-	if(cur->stdout_closed && cur->fdt[1] == NULL)
-		return 1;
 	for(int i = 2; i < 64; ++i)
 		if(cur->fdt[i] == NULL)
 			return i;
@@ -187,9 +183,9 @@ int write(int fd, const void *buffer, unsigned size) {
 
   struct thread* cur = thread_current();
 
-  if (fd == 0 && !cur->stdin_closed) exit_(-1);
+  if (fd == 0) exit_(-1);
 
-  if (fd == 1 && !cur->stdout_closed) {
+  if (fd == 1) {
     lock_acquire(&filesys_lock);
     putbuf(buffer, size);
     lock_release(&filesys_lock);
@@ -244,9 +240,9 @@ int read(int fd, const void *buffer, unsigned size)
 
   struct thread* cur = thread_current();
 
-  if (fd == 1 && !cur->stdout_closed) exit_(-1);
+  if (fd == 1) exit_(-1);
 
-  if (fd == 0 && !cur->stdin_closed) {
+  if (fd == 0) {
     lock_acquire(&filesys_lock);
     input_getc();
     lock_release(&filesys_lock);
@@ -352,10 +348,7 @@ void close(int fd)
 	
 	struct thread* cur = thread_current();
 
-  if (fd == 0 && !cur->stdin_closed)
-    cur->stdin_closed = true;
-  else if (fd == 1 && !cur->stdout_closed)
-    cur->stdout_closed = true;
+  if (fd == 0 || fd == 1) exit_(-1);
   else {
     if(cur->fdt[fd] == NULL)
 		  return;

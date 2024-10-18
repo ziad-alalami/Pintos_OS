@@ -104,8 +104,6 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;	        /* Tick till wake up.  */
     struct file* fdt[64];               /* File descriptor table. */
-    bool stdin_closed;			/*Whether STDIN has been closed */
-    bool stdout_closed;			/*Whether STDOUT has been closed */
     struct file* running_file;	        /*The file containing the program/executable */
     struct process_descriptor* pd;      /* Process descriptor for parent/child relationship */
     struct list children;               /* A list of procescs_descriptor* children */
