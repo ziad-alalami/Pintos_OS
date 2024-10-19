@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "threads/thread.h"
 
+/*Initialize pipe struct */
 void pipe_init(struct pipe* pipe) {
   pipe->buffer = malloc(PIPE_CAP);
   pipe->size = 0;
@@ -18,6 +19,7 @@ void pipe_init(struct pipe* pipe) {
   pipe->write_waiting = false;
 }
 
+/*API to read from pipe ring buffer into given buffer*/
 int pipe_read(struct pipe* pipe, void* buffer, unsigned size) {
   if (pipe->num_writers == 0 && pipe->size == 0) return 0;
   
@@ -48,6 +50,7 @@ int pipe_read(struct pipe* pipe, void* buffer, unsigned size) {
   return bytes_read;
 }
 
+/*API to write given buffer into pipe ring buffer */
 int pipe_write(struct pipe* pipe, const void* buffer, unsigned size) {
   if (pipe->num_readers == 0) return -1;
 
@@ -77,6 +80,7 @@ int pipe_write(struct pipe* pipe, const void* buffer, unsigned size) {
   return bytes_written;
 }
 
+/*Close pipe readers and free memory*/
 void pipe_close_reader(struct pipe* pipe) {
   sema_down(&pipe->modify_sema);
   --pipe->num_readers;
@@ -91,6 +95,7 @@ void pipe_close_reader(struct pipe* pipe) {
   }
 }
 
+/*Close pipe writers and free memory*/
 void pipe_close_writer(struct pipe* pipe) {
   sema_down(&pipe->modify_sema);
   --pipe->num_writers;

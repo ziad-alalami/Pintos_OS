@@ -1,0 +1,273 @@
+             +--------------------------+
+             |          EE415           |
+             | PROJECT 2: USER PROGRAMS |
+             |     DESIGN DOCUMENT      |
+             +--------------------------+
+
+---- GROUP ----
+
+>> Fill in the names and email addresses of your group members.
+
+Ziad Alalami 20246463 zezolemeilleur@kaist.ac.kr
+Carter Moore 20246509 carter@kaist.ac.kr
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, notes for the
+>> TAs, or extra credit, please give them here.
+
+The assignment was a bit difficult, especially considering that we did not covermany of these topics by the time the project was released and the time was a bittight considering the midterms.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+Intel x86 IA-32 Documentation for interrupt handling and syscalls. The source was provided by the TAs
+
+               ARGUMENT PASSING
+               ================
+
+---- DATA STRUCTURES ----
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+None
+
+---- ALGORITHMS ----
+
+>> A2: Briefly describe how you implemented argument parsing.  How do
+>> you arrange for the elements of argv[] to be in the right order?
+>> How do you avoid overflowing the stack page?
+
+The start_process functions takes the command and then allocates each argument in argv in the same order they appear. To accomodate for all arguments, argv is reallocated each time using realloc(). Each argument is found using strtok_r which returns the string given a limiter. Then we initialize the interrupt frame andwe store the arguments on the stack pointer in the opposite orders.
+
+We start by pushing the last string token and so forth until we reach the end.
+Then we pad what remains with zeros to be 4 bytes aligned
+Then we push the pointers of each string token on the stack pointer (the pointers are the pointers of the arguments that we just pushed to the stack)
+
+Then we push argvs address, then argc (the value), then our return address (the fake return address in our case, 0). 
+---- RATIONALE ----
+
+
+>> A3: Why does Pintos implement strtok_r() but not strtok()?
+Because it is safe and concurrent and does not allow other threads (or maybe even multi threaded environments) when keeping track of the current position in the string because it is static
+
+>> A4: In Pintos, the kernel separates commands into a executable name
+>> and arguments.  In Unix-like systems, the shell does this
+>> separation.  Identify at least two advantages of the Unix approach.
+
+1- Modularity: Unix seperates works and divides it to make simpler and easier to change if there is any changes by seperating the shell from the kernel
+
+2- Efficiency: By keeping the kernel for the most critical tasks, the kernel is optimized and is not concerned with parsing user inputs and commands and checking for the security in these commands because it is done by the shell
+
+		SYSTEM CALLS
+                 ============
+
+---- DATA STRUCTURES ----
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+Pipe Struct:
+
+struct pipe{
+void* buffer;
+  int size;
+  int num_readers;
+  int num_writers;
+  struct semaphore read_wait_sema;
+  struct semaphore write_wait_sema;
+  struct semaphore modify_sema;
+  int next_read;
+  int next_write;
+  bool read_waiting;
+  bool write_waiting;
+};
+
+The struct was used to coordinate pipe algorithms and lock mechanisms to ensure
+synchronization between the threads with the pipe FDs.
+
+Process Descriptor Struct:
+struct process_descriptor {
+   int exit_status;
+   bool is_exited;
+   tid_t tid;
+   struct semaphore exec_sema;
+   struct semaphore wait_sema;
+   struct thread* child;
+   struct list_elem elem;
+};
+
+The struct was used to keep track of child processes especially in wait and execsyscalls were the parent process waits for its child.
+
+FD Type ENUM:
+
+enum fdtype {
+   FILE,
+   PIPE_READER,
+   PIPE_WRITER
+};
+
+Assigned to each a regular file, pipe reader, pipe writer for distinguishing between FD types.
+
+Struct File Descriptor:
+
+struct file_descriptor {
+   struct file* file;
+   enum fdtype type;
+   struct pipe* pipe;
+};
+
+FD Type ENUM:
+
+enum fdtype {
+   FILE,
+   PIPE_READER,
+   PIPE_WRITER
+};
+
+Assigned to each a regular file, pipe reader, pipe writer for distinguishing between FD types.
+
+Struct File Descriptor:
+
+struct file_descriptor {
+   struct file* file;
+   enum fdtype type;
+   struct pipe* pipe;
+};
+
+
+>> B2: Describe how file descriptors are associated with open files.
+>> Are file descriptors unique within the entire OS or just within a
+>> single process?
+A file descriptor indicates that in the file descriptor table (FDT) there is a current file in that index that is open and that user can perform syscall operations on. (STDIN and STDOUT in our implementations do not have a file and are treated differently).
+
+File descriptors are unique for each process, so each process has 64 entries into different files (or maybe they can point due to another reason to the same file).
+
+---- ALGORITHMS ----
+
+>> B3: Describe your code for reading and writing user data from the
+>> kernel.
+In both syscalls, we validate the pointers for the buffer first (otherwise exit with status -1) and then we make sure that the FDs are valid and do not point toNULL. 
+
+After that, if the FD given is for STDIN (0) in write or STDOUT (1) in read, theprocess exits with status -1 because this is an illegal command.
+
+Now we have to gain a lock (using sema_down) 
+
+If STDIN (0) in read or STDOUT (1) in write, we read into from the user input to the given buffer, or we write the buffer to the user output respectively.
+
+If FD matches a pipe read file descriptor or a pipe write file descriptor,
+we read or write from/to the pipe buffers respectively
+
+Otherwise, the FD points to a regular file and we read from it or write to it normally
+
+
+Lastly we release the lock (sema_up) and in read, we return min(size to read, size actually read) and write we return size to read, if not available the write thread waits for input.
+
+
+>> B4: Suppose a system call causes a full page (4,096 bytes) of data
+>> to be copied from user space into the kernel.  What is the least
+>> and the greatest possible number of inspections of the page table
+>> (e.g. calls to pagedir_get_page()) that might result?  What about
+>> for a system call that only copies 2 bytes of data?  Is there room
+>> for improvement in these numbers, and how much?
+
+>> B5: Briefly describe your implementation of the "wait" system call
+>> and how it interacts with process termination.
+
+>> B6: Any access to user program memory at a user-specified address
+>> can fail due to a bad pointer value.  Such accesses must cause the
+>> process to be terminated.  System calls are fraught with such
+>> accesses, e.g. a "write" system call requires reading the system
+>> call number from the user stack, then each of the call's three
+>> arguments, then an arbitrary amount of user memory, and any of
+>> these can fail at any point.  This poses a design and
+SYSTEM CALLS
+                 ============
+
+---- DATA STRUCTURES ----
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+>> B2: Describe how file descriptors are associated with open files.
+>> Are file descriptors unique within the entire OS or just within a
+>> single process?
+
+---- ALGORITHMS ----
+
+>> B3: Describe your code for reading and writing user data from the
+>> kernel.
+
+>> B4: Suppose a system call causes a full page (4,096 bytes) of data
+>> to be copied from user space into the kernel.  What is the least
+>> and the greatest possible number of inspections of the page table
+>> (e.g. calls to pagedir_get_page()) that might result?  What about
+>> for a system call that only copies 2 bytes of data?  Is there room
+>> for improvement in these numbers, and how much?
+In both cases the minimum is one and the maximum is 2.
+Full page can fit in one inspection if the allocated page is empty, otherwise it needs another new page to fit in.
+
+2 bytes can fit in one inspection if the page has enough space for 2 bytes, otherwise a new page is required to fit them.
+
+
+>> B5: Briefly describe your implementation of the "wait" system call
+>> and how it interacts with process termination.
+
+It calls process_wait which takes the child process ID / thread ID and looks in the children list of that process to make sure the child ID exists and has not been waited on before. Otherwise, return -1. Then the parent process acquires is put to wait by locking on an occupied lock (sema_down when initial value is zero). Once the child process exits, it returns its exit status and calls sema_up to wake up the parent process.
+
+>> B6: Any access to user program memory at a user-specified address
+>> can fail due to a bad pointer value.  Such accesses must cause the
+>> process to be terminated.  System calls are fraught with such
+>> accesses, e.g. a "write" system call requires reading the system
+>> call number from the user stack, then each of the call's three
+>> arguments, then an arbitrary amount of user memory, and any of
+>> these can fail at any point.  This poses a design and
+>> error-handling problem: how do you best avoid obscuring the primary
+>> function of code in a morass of error-handling?  Furthermore, when
+>> an error is detected, how do you ensure that all temporarily
+>> allocated resources (locks, buffers, etc.) are freed?  In a few
+>> paragraphs, describe the strategy or strategies you adopted for
+>> managing these issues.  Give an example.
+
+
+To handle user memory access errors without cluttering system call code with excessive error-handling, a clean and modular approach is key. One strategy is to use **helper functions** that centralize the logic for validating user pointers. For example, before accessing a user-specified address, a function like `validate_user_pointer()` can ensure the address is valid. This keeps the main system call code focused on its primary function, while error-checking remains separated and reusable across different system calls. When an invalid pointer is detected, the process can be terminated immediately with minimal disruption to the main logic.
+
+For resource cleanup, adopting a **centralized exit or cleanup mechanism** ensures that all temporarily allocated resources (e.g., locks, buffers) are freed when an error occurs. A common practice is to use a **"cleanup-on-exit"** pattern, where resources are released in a single location, typically during the process termination. This can be achieved through helper functions or structured cleanup routines. For instance, if a write operation allocates a buffer, the system can maintain a list of allocated resources and automatically release them when the process exits, regardless of how it terminates. This ensures that resources are consistently cleaned up without requiring each system call to handle all potential errors and cleanup paths explicitly.
+
+---- SYNCHRONIZATION ----
+
+>> B7: The "exec" system call returns -1 if loading the new executable
+>> fails, so it cannot return before the new executable has completed
+>> loading.  How does your code ensure this?  How is the load
+>> success/failure status passed back to the thread that calls "exec"?
+The process descriptor struct has a member called is_exited which is true whenever the child process is terminated whether by calling exit or due to an error caused, and whenever the is_exit field is set to true, the lock is also released for the parent to wake up again
+
+>> B8: Consider parent process P with child process C.  How do you
+>> ensure proper synchronization and avoid race conditions when P
+>> calls wait(C) before C exits?  After C exits?  How do you ensure
+>> that all resources are freed in each case?  How about when P
+>> terminates without waiting, before C exits?  After C exits?  Are
+>> there any special cases?
+
+To ensure proper synchronization and avoid race conditions when `P` calls `wait(C)`, a **semaphore or condition variable** can be used to block `P` until `C` exits, ensuring `P` waits correctly. If `P` calls `wait()` after `C` exits, the exit status is stored until `P` retrieves it. In both cases, resources allocated to `C` are freed after `P` has finished waiting.
+
+If `P` terminates without waiting, a **detached state** is applied to `C`, allowing it to free its resources upon exit, independent of `P`. If `P` terminates after `C` exits, the stored exit status can be freed when `P` terminates. Special cases involve handling **orphaned processes** and ensuring no resource leaks when parents terminate unexpectedly.
+
+---- RATIONALE ----
+
+>> B9: Why did you choose to implement access to user memory from the
+>> kernel in the way that you did?
+The interrupt frame stores the user stack pointer arguments, so we do not have to directly access the user memory but rather just the stack pointer. Therefore because it is simple and contains all of the arguments required for the syscall
+
+
+>> B10: What advantages or disadvantages can you see to your design
+>> for file descriptors?
+Advantages: Deals with different FD Types (STD I/O, Pipes, and Files) accordingly and ensures there is no memory leak
+Disadvantages: There is no specific file entry for STD I/O. Rather it is kept asnull and is not considered in the get_next_fd function
+
+>> B11: The default tid_t to pid_t mapping is the identity mapping.
+>> If you changed it, what advantages are there to your approach?
+I did not change it. tid_t is the same as pid_t.

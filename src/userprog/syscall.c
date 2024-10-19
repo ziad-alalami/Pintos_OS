@@ -19,13 +19,14 @@ static void syscall_handler (struct intr_frame *);
 
 static struct lock filesys_lock;
 
+/*Initializes lock and interrupt vector for syscall handling*/
 void
 syscall_init (void) 
 {
   lock_init(&filesys_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
-
+/*Handles syscall functions from user and takes inputs from the user stack*/
 static void
 syscall_handler (struct intr_frame *f) 
 {
@@ -154,6 +155,7 @@ bool validate_pointer(const void* pointer)
 	return pointer != NULL && is_user_vaddr(pointer) && pagedir_get_page(thread_current()->pagedir, pointer) != NULL;
 }
 
+/*Get the next unoccupied FD between 2 and 63 otherwise return -1*/
 int get_next_fd()
 {
 	struct thread* cur = thread_current();
@@ -163,10 +165,11 @@ int get_next_fd()
 	return -1; //Table is full
 }
 
+/*Turns off Pintos OS*/
 void halt() {
   shutdown_power_off();
 }
-
+/*Exits current process/thread with given status and wakes up parent process*/
 void exit_(int status) {
   struct thread* cur = thread_current();
   if (cur->pd != NULL) {
@@ -177,6 +180,14 @@ void exit_(int status) {
   printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
 }
+
+/*Returns size when size bytes is written from buffer, otherwise wait
+ * If the pointers are invalid, it exits with status -1
+ * If FD is invalid or corresponds to NULL, returns -1
+ * If trying to write to STDIN, exits with status -1
+ * If trying to write to STDOUT, waits for input
+ * If trying to write to pipe buffer, calls pipe_write API
+ * Else writes to a normal file*/
 
 int write(int fd, const void *buffer, unsigned size) {
   if (!validate_pointer(buffer)) exit_(-1);
@@ -210,6 +221,9 @@ int write(int fd, const void *buffer, unsigned size) {
   return result;
 }
 
+/*Creates a new process and executes it after taking input from command line
+ * New process is added to child list of the parent process and returns its
+ * process ID (pid)*/
 pid_t exec(const char* cmd_line) {
   pid_t pid = process_execute(cmd_line);
 
@@ -235,10 +249,18 @@ pid_t exec(const char* cmd_line) {
   return child->tid;
 }
 
+/*Waits for a child process to terminate before waking up again*/
 int wait(pid_t pid) {
   return process_wait(pid);
 }
 
+/*Returns number of bytes read into the buffer.
+ * If the pointers are invalid, it exits with status -1
+ * If FD is invalid or corresponds to NULL, returns -1
+ * If trying to read from STDOUT, exits with status -1
+ * If trying to read from STDIN, waits for input
+ * If trying to read from pipe buffer, calls pipe_read API
+ * Else reads from a normal file*/
 int read(int fd, const void *buffer, unsigned size)
 {
 	if(!validate_pointer(buffer))
@@ -273,7 +295,8 @@ int read(int fd, const void *buffer, unsigned size)
 
   return result;
 }
-
+/*Returns current offset position from a given FD if the file exists, if the 
+ * input is invalid or the corresponding FD is empty, it returns -1*/
 unsigned int tell(int fd)
 {
 	if(fd < 0 || fd > 63)
@@ -286,7 +309,8 @@ unsigned int tell(int fd)
 	lock_release(&filesys_lock);
 	return pos;
 }
-
+/*Returns the size of the given file in the file descriptor, returns -1 if given
+ FD is invalid or does not correspond to a file descriptor*/
 int filesize(int fd)
 {
   if(fd < 0 || fd > 63)
@@ -299,7 +323,8 @@ int filesize(int fd)
   lock_release(&filesys_lock);
 	return size;
 }
-
+/*Moves current file pointer to given position, if position is larger than
+ * file size, it will move to the end*/
 void seek(int fd, unsigned position)
 {
 	if(fd < 0 || fd > 63) return;
@@ -311,7 +336,8 @@ void seek(int fd, unsigned position)
 	file_seek(file_desc->file, position);
   lock_release(&filesys_lock);
 }
-
+/*Creates a new file in the file system directory and exits in case of invalid
+ * pointer*/
 bool create(const char* file, unsigned initial_size)
 {
 	if(!validate_pointer(file))
@@ -323,7 +349,8 @@ bool create(const char* file, unsigned initial_size)
 
 	return created;
 }
-
+/*Removes a given file from the file system directory and exits
+ * with status -1 in case of invalid pointer*/
 bool remove(const char* file)
 {
 	if(!validate_pointer(file))
@@ -334,6 +361,9 @@ bool remove(const char* file)
 	return removed;
 }
 
+/*Opens a file and returns its FD (between 2 and 63 as 0 and 1 are reserved
+ * for STDIN and STDOUT respectively), return -1 when FDT is full and exits
+ * in case of invalid pointer*/
 int open(const char* file)
 {
 	if(!validate_pointer(file))
@@ -360,6 +390,8 @@ int open(const char* file)
   return next_fd;	
 }
 
+/*Closes the given file descriptor (file or pipe) and exits wiht -1 in case of
+ * wrong input or attempting to close STDIN or STDOUT*/
 void close(int fd)
 {
 	if(fd < 0 || fd > 63)
@@ -384,6 +416,9 @@ void close(int fd)
   cur->fdt[fd] = NULL;
 }
 
+/*Pipe syscall that returns 0 if pipe created successfully, otherwise
+ * returns -1 . The first element in the array fds[0] is the pipe read file descriptor
+ * and the second fds[1] is the pipe write file descriptor*/
 int pipe(int* fds)
 {
 	if(!validate_pointer(fds))

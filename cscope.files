@@ -196,10 +196,12 @@
 ./src/tests/threads/tests.c
 ./src/tests/threads/mlfqs-load-60.c
 ./src/tests/arc4.h
+./src/tests/userprog/pipe-bad-write.c
 ./src/tests/userprog/create-empty.c
 ./src/tests/userprog/bad-write.c
 ./src/tests/userprog/exec-bound-3.c
 ./src/tests/userprog/rox-multichild.c
+./src/tests/userprog/pipe-bad-read.c
 ./src/tests/userprog/create-normal.c
 ./src/tests/userprog/child-simple.c
 ./src/tests/userprog/wait-twice.c
@@ -209,12 +211,14 @@
 ./src/tests/userprog/sc-bad-sp.c
 ./src/tests/userprog/exec-arg.c
 ./src/tests/userprog/open-missing.c
+./src/tests/userprog/pipe-short.c
 ./src/tests/userprog/multi-recurse.c
 ./src/tests/userprog/write-bad-fd.c
 ./src/tests/userprog/create-long.c
 ./src/tests/userprog/write-zero.c
 ./src/tests/userprog/bad-jump2.c
 ./src/tests/userprog/halt.c
+./src/tests/userprog/pipe-rw-close.c
 ./src/tests/userprog/child-bad.c
 ./src/tests/userprog/boundary.h
 ./src/tests/userprog/create-null.c
@@ -236,6 +240,7 @@
 ./src/tests/userprog/child-rox.c
 ./src/tests/userprog/write-stdin.c
 ./src/tests/userprog/wait-simple.c
+./src/tests/userprog/child-short.c
 ./src/tests/userprog/bad-read.c
 ./src/tests/userprog/wait-bad-pid.c
 ./src/tests/userprog/open-empty.c
@@ -247,6 +252,7 @@
 ./src/tests/userprog/no-vm/multi-oom.c
 ./src/tests/userprog/open-null.c
 ./src/tests/userprog/child-close.c
+./src/tests/userprog/child-long.c
 ./src/tests/userprog/open-twice.c
 ./src/tests/userprog/rox-simple.c
 ./src/tests/userprog/write-bad-ptr.c
@@ -262,8 +268,10 @@
 ./src/tests/userprog/read-stdout.c
 ./src/tests/userprog/close-bad-fd.c
 ./src/tests/userprog/close-twice.c
+./src/tests/userprog/pipe-long.c
 ./src/tests/userprog/open-normal.c
 ./src/tests/userprog/open-bad-ptr.c
+./src/tests/userprog/pipe-wr-close.c
 ./src/tests/userprog/create-bad-ptr.c
 ./src/lib/packed.h
 ./src/lib/ctype.h
@@ -306,6 +314,7 @@
 ./src/lib/syscall-nr.h
 ./src/threads/malloc.h
 ./src/threads/palloc.h
+./src/threads/pipe.c
 ./src/threads/malloc.c
 ./src/threads/intr-stubs.h
 ./src/threads/synch.h
@@ -316,6 +325,7 @@
 ./src/threads/interrupt.h
 ./src/threads/flags.h
 ./src/threads/loader.h
+./src/threads/pipe.h
 ./src/threads/pte.h
 ./src/threads/thread.h
 ./src/threads/vaddr.h
