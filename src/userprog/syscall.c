@@ -158,7 +158,7 @@ int get_next_fd()
 {
 	struct thread* cur = thread_current();
 	for(int i = 2; i < 64; ++i)
-		if(cur->fdt[i] == NULL)
+		if(cur->fdt[i] == NULL && i != cur->pipe_read_fd && i!= cur->pipe_write_fd)
 			return i;
 	return -1; //Table is full
 }
@@ -187,7 +187,7 @@ int write(int fd, const void *buffer, unsigned size) {
   if (fd == 0) exit_(-1);
   
   if(fd == cur->pipe_write_fd)
-	  return pipe_write(cur->pipe_write, buffer,size);
+	  return pipe_write(cur->pipe, buffer,size);
 
   if (fd == 1 && cur->pipe_write_fd != 1) {
     lock_acquire(&filesys_lock);
@@ -247,7 +247,7 @@ int read(int fd, const void *buffer, unsigned size)
   if (fd == 1) exit_(-1);
 
   if(fd == cur->pipe_read_fd)
-	  return pipe_read(cur->pipe_read, buffer,size);
+	  return pipe_read(cur->pipe, buffer,size);
 
   if (fd == 0 && cur->pipe_read_fd != 0) {
     lock_acquire(&filesys_lock);
@@ -355,18 +355,29 @@ void close(int fd)
 	
 	struct thread* cur = thread_current();
 
-  if (fd == 0 || fd == 1) exit_(-1);
+  if ((fd == 0  || fd == 1) && fd !=cur->pipe_read_fd && fd != cur->pipe_write_fd) exit_(-1);
   if(fd == cur->pipe_read_fd)
   {
 	  cur->pipe_read_fd = -1;
-	  palloc_free_page(cur->pipe_read->buffer);
-	  cur->pipe_read = NULL;
+	  cur->pipe->read_thread = NULL;
+	  cur->pipe->num_readers--;
+          if(cur->pipe->num_readers == 0 && cur->pipe->num_writers ==0)
+          {
+                  palloc_free_page(cur->pipe->buffer);
+                  cur->pipe = NULL;
+          }
+
   }
   else if(fd == cur->pipe_write_fd)
   {
 	  cur->pipe_write_fd = -1;
-	  palloc_free_page(cur->pipe_write->buffer);
-	  cur->pipe_write = NULL;
+	  cur->pipe->write_thread = NULL;
+	  cur->pipe->num_writers--;
+	  if(cur->pipe->num_readers == 0 && cur->pipe->num_writers ==0)
+	  {
+		  palloc_free_page(cur->pipe->buffer);
+		  cur->pipe = NULL;
+	  }
   }
  
   else {
@@ -394,7 +405,6 @@ int pipe(int* fds)
 	fds[1] = pipe_write;
 	cur->pipe_read_fd = pipe_read;
 	cur->pipe_write_fd = pipe_write;
-	pipe_init(cur->pipe_read);
-	pipe_init(cur->pipe_write);
+	pipe_init(cur->pipe);
 	return 0;
 }

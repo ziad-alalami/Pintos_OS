@@ -17,6 +17,7 @@
 #include "filesys/file.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include "userprog/pipe.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -110,6 +111,8 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  initial_thread->pipe_read_fd = -1;
+  initial_thread->pipe_write_fd = -1;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -221,10 +224,21 @@ thread_create (const char *name, int priority,
   sema_init(&pd->exec_sema, 0);
   sema_init(&pd->wait_sema, 0);
   t->pd = pd;
-  t->pipe_read = -1;
-  t->pipe_write = -1;
+  t->pipe_read_fd = -1;
+  t->pipe_write_fd = -1;
   list_push_back(&parent->children, &pd->elem);
+  for(int i = 0; i < 64; i++)
+          if(parent->fdt[i] != NULL)
+                  t->fdt[i] = parent->fdt[i];
+  if(parent->pipe_read_fd != -1 && parent->pipe_write_fd != -1)
+  {
+          t->pipe_read_fd = 0;
+          t->pipe = parent->pipe;
 
+          t->pipe->num_readers++;
+
+          t->pipe->read_thread = t;
+  }
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -263,7 +277,6 @@ thread_unblock (struct thread *t)
   ASSERT (is_thread (t));
 
   old_level = intr_disable ();
-  ASSERT (t->status == THREAD_BLOCKED);
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -338,6 +351,7 @@ thread_current (void)
      have overflowed its stack.  Each thread has less than 4 kB
      of stack, so a few big automatic arrays or moderate
      recursion can cause stack overflow. */
+
   ASSERT (is_thread (t));
   ASSERT (t->status == THREAD_RUNNING);
 
@@ -373,16 +387,20 @@ thread_exit (void)
 
     next = list_next(e);
     list_remove(e);
-
     free(pd);
   }
+  if(cur->pipe_write_fd != -1)
+	  close(cur->pipe_write_fd);
+  if(cur->pipe_read_fd != -1)
+	  close(cur->pipe_read_fd);
+
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */ 
   for(int i = 0; i < 64; i++)
 	  file_close(cur->fdt[i]);
- 
+
   intr_disable();
   list_remove (&cur->allelem);
   cur->status = THREAD_DYING;
@@ -561,7 +579,6 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->children);
   t->pd = NULL; // Will be initialized in thread_create
   t->running_file = NULL;
-
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);

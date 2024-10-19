@@ -11,6 +11,8 @@ struct pipe{
         int num_readers;
 	int num_writers;
 	struct semaphore pipe_sema;
+	bool is_empty;
+	bool is_full;
 	int next_read; // For pipe_read
 	int next_write; // For pipe_write
 	struct thread* write_thread;
