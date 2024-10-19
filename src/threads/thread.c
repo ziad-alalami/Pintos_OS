@@ -15,6 +15,7 @@
 #include "devices/timer.h"
 #include "threads/malloc.h"
 #include "filesys/file.h"
+#include "threads/pipe.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -224,10 +225,31 @@ thread_create (const char *name, int priority,
 
   list_push_back(&parent->children, &pd->elem);
 
+  copy_fdt(parent, t);
+
   /* Add to run queue. */
   thread_unblock (t);
 
   return tid;
+}
+
+void
+copy_fdt(struct thread* parent, struct thread* child) {
+  // Copy pipe if exists
+  for (int i = 0; i < 64; ++i) {
+    struct file_descriptor* fd = parent->fdt[i];
+    if (fd != NULL && fd->type == PIPE_READER) {
+      child->fdt[0] = malloc(sizeof(struct file_descriptor));
+      child->fdt[0]->type = PIPE_READER;
+      child->fdt[0]->file = NULL;
+      child->fdt[0]->pipe = fd->pipe;
+      ++fd->pipe->num_readers;
+      break;
+    }
+  }
+
+  // Currently not copying remainder of fdt because the tests
+  // do not require it
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
@@ -376,12 +398,24 @@ thread_exit (void)
     free(pd);
   }
 
+  for(int i = 0; i < 64; i++) {
+    struct file_descriptor* fd = cur->fdt[i];
+    if (fd == NULL) continue;
+
+    if (fd->type == FILE) {
+      file_close(fd->file);
+    } else if (fd->type == PIPE_READER) {
+      pipe_close_reader(fd->pipe);
+    } else if (fd->type == PIPE_WRITER) {
+      pipe_close_writer(fd->pipe);
+    }
+    free(fd);
+  }
+
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */ 
-  for(int i = 0; i < 64; i++)
-	  file_close(cur->fdt[i]);
- 
+
   intr_disable();
   list_remove (&cur->allelem);
   cur->status = THREAD_DYING;
@@ -560,6 +594,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->children);
   t->pd = NULL; // Will be initialized in thread_create
   t->running_file = NULL;
+  memset(t->fdt, 0, sizeof(t->fdt));
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

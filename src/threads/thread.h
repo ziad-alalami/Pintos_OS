@@ -37,6 +37,18 @@ struct process_descriptor {
    struct list_elem elem;
 };
 
+enum fdtype {
+   FILE,
+   PIPE_READER,
+   PIPE_WRITER
+};
+
+struct file_descriptor {
+   struct file* file;
+   enum fdtype type;
+   struct pipe* pipe;
+};
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -103,7 +115,7 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t wakeup_tick;	        /* Tick till wake up.  */
-    struct file* fdt[64];               /* File descriptor table. */
+    struct file_descriptor* fdt[64];               /* File descriptor table. */
     struct file* running_file;	        /*The file containing the program/executable */
     struct process_descriptor* pd;      /* Process descriptor for parent/child relationship */
     struct list children;               /* A list of procescs_descriptor* children */
@@ -133,6 +145,7 @@ void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
+void copy_fdt(struct thread* parent, struct thread* child);
 
 void thread_block (void);
 void thread_unblock (struct thread *);

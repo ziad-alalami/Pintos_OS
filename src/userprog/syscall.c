@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include "userprog/process.h"
 #include "threads/malloc.h"
+#include "threads/pipe.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -138,7 +139,7 @@ syscall_handler (struct intr_frame *f)
       {
       if (!validate_pointer(addr1)) exit_(-1);
       int* fds = *(int **)(addr1);
-      f->eax= pipe(fds);
+      f->eax = pipe(fds);
       break;
       }
   }
@@ -192,12 +193,19 @@ int write(int fd, const void *buffer, unsigned size) {
     return size;
   }
 
-  struct file* file_ = cur->fdt[fd];
-  if (file_ == NULL) return -1;
+  struct file_descriptor* file_desc = cur->fdt[fd];
+  if (file_desc == NULL) return -1;
 
-  lock_acquire(&filesys_lock);
-  int result = file_write(file_, buffer, size);
-  lock_release(&filesys_lock);
+  int result = 0;
+  if (file_desc->type == FILE) {
+    lock_acquire(&filesys_lock);
+    result = file_write(file_desc->file, buffer, size);
+    lock_release(&filesys_lock);
+  }
+  else if (file_desc->type == PIPE_WRITER)
+    result = pipe_write(file_desc->pipe, buffer, size);
+  else
+    result = -1;
 
   return result;
 }
@@ -242,19 +250,26 @@ int read(int fd, const void *buffer, unsigned size)
 
   if (fd == 1) exit_(-1);
 
-  if (fd == 0) {
+  if (fd == 0 && cur->fdt[fd] == NULL) {
     lock_acquire(&filesys_lock);
     input_getc();
     lock_release(&filesys_lock);
     return size;
   }
 
-  struct file* file_ = cur->fdt[fd];
-  if (file_ == NULL) return -1;
+  struct file_descriptor* file_desc = cur->fdt[fd];
+  if (file_desc == NULL) return -1;
 
-  lock_acquire(&filesys_lock);
-  int result = file_read(file_, buffer, size);
-  lock_release(&filesys_lock);
+  int result = 0;
+  if (file_desc->type == FILE) {
+    lock_acquire(&filesys_lock);
+    result = file_read(file_desc->file, buffer, size);
+    lock_release(&filesys_lock);
+  }
+  else if (file_desc->type == PIPE_READER)
+    result = pipe_read(file_desc->pipe, buffer, size);
+  else
+    result = -1;
 
   return result;
 }
@@ -263,11 +278,11 @@ unsigned int tell(int fd)
 {
 	if(fd < 0 || fd > 63)
 		return -1;
-	struct file* file_ = thread_current()->fdt[fd];
-	if(file_ == NULL) return -1;
+	struct file_descriptor* file_desc = thread_current()->fdt[fd];
+	if(file_desc == NULL || file_desc->type != FILE) return -1;
 
 	lock_acquire(&filesys_lock);
-	unsigned pos = file_tell(file_);
+	unsigned pos = file_tell(file_desc->file);
 	lock_release(&filesys_lock);
 	return pos;
 }
@@ -276,11 +291,11 @@ int filesize(int fd)
 {
   if(fd < 0 || fd > 63)
     return -1;
-  struct file* file_ = thread_current()->fdt[fd];
-  if(file_ == NULL) return -1;
+	struct file_descriptor* file_desc = thread_current()->fdt[fd];
 
+  if(file_desc == NULL || file_desc->type != FILE) return -1;
   lock_acquire(&filesys_lock);
-  int size = file_length(file_);
+  int size = file_length(file_desc->file);
   lock_release(&filesys_lock);
 	return size;
 }
@@ -289,10 +304,11 @@ void seek(int fd, unsigned position)
 {
 	if(fd < 0 || fd > 63) return;
 
-	struct file* file_ = thread_current()->fdt[fd];
-	if(file_ == NULL) return;
+	struct file_descriptor* file_desc = thread_current()->fdt[fd];
+
+	if(file_desc == NULL || file_desc->type != FILE) return;
   lock_acquire(&filesys_lock);
-	file_seek(file_, position);
+	file_seek(file_desc->file, position);
   lock_release(&filesys_lock);
 }
 
@@ -336,7 +352,10 @@ int open(const char* file)
 	if(file_ == NULL)
 		return -1;
 
-	cur->fdt[next_fd] = file_;
+	cur->fdt[next_fd] = malloc(sizeof(struct file_descriptor));
+  cur->fdt[next_fd]->type = FILE;
+  cur->fdt[next_fd]->file = file_;
+  cur->fdt[next_fd]->pipe = NULL;
 
   return next_fd;	
 }
@@ -349,14 +368,20 @@ void close(int fd)
 	struct thread* cur = thread_current();
 
   if (fd == 0 || fd == 1) exit_(-1);
-  else {
-    if(cur->fdt[fd] == NULL)
-		  return;
-    lock_acquire(&filesys_lock);
-    file_close(cur->fdt[fd]);
-    lock_release(&filesys_lock);
-    cur->fdt[fd] = NULL;
-  }
+  if(cur->fdt[fd] == NULL)
+    return;
+  
+  struct file_descriptor* file_desc = cur->fdt[fd];
+
+  lock_acquire(&filesys_lock);
+  if (file_desc->type == FILE)
+    file_close(file_desc->file);
+  else if (file_desc->type == PIPE_READER)
+    pipe_close_reader(file_desc->pipe);
+  else if (file_desc->type == PIPE_WRITER)
+    pipe_close_writer(file_desc->pipe);
+  lock_release(&filesys_lock);
+  cur->fdt[fd] = NULL;
 }
 
 int pipe(int* fds)
@@ -366,9 +391,33 @@ int pipe(int* fds)
 
 	struct thread* cur = thread_current();
 	
+  int reader_fd = get_next_fd();
+  if (reader_fd == -1) return -1;
+  cur->fdt[reader_fd] = 1; // Temp set to 1 while we search for the next fd
 
+  int writer_fd = get_next_fd();
+  if (writer_fd == -1) {
+    cur->fdt[reader_fd] = NULL;
+    return -1;
+  }
 
+  fds[0] = reader_fd;
+  fds[1] = writer_fd;
 
-	//TODO create a buffer for the pipe and make it circular
-	return -1;
+  struct pipe* pipe = malloc(sizeof(struct pipe));
+  pipe_init(pipe);
+
+	struct file_descriptor* reader = malloc(sizeof(struct file_descriptor));
+  reader->type = PIPE_READER;
+  reader->pipe = pipe;
+  reader->file = NULL;
+  cur->fdt[reader_fd] = reader;
+
+  struct file_descriptor* writer = malloc(sizeof(struct file_descriptor));
+  writer->type = PIPE_WRITER;
+  writer->pipe = pipe;
+  writer->file = NULL;
+  cur->fdt[writer_fd] = writer;
+
+	return 0;
 }
