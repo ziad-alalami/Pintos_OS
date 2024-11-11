@@ -16,6 +16,7 @@
 #include "threads/malloc.h"
 #include "filesys/file.h"
 #include "threads/pipe.h"
+#include "filesys/file.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
