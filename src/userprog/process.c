@@ -509,7 +509,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
-      struct vm_entry * vme = vm_entry_init(upage, PAGE_ANON, writable,file,ofs, page_read_bytes, page_zero_bytes);
+      struct vm_entry * vme = vm_entry_init(upage, PAGE_ELF, writable,file,ofs, page_read_bytes, page_zero_bytes);
       if(vme == NULL)
       {
 	      return false;
@@ -536,18 +536,21 @@ setup_stack (void **esp)
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success)
-        *esp = PHYS_BASE;
-      else
+      if (!success)
+      {
         palloc_free_page (kpage);
-    }
-  struct vm_entry* vme = vm_entry_init(((uint8_t *) PHYS_BASE) - PGSIZE, PAGE_ELF, true, NULL, 0, 0, 0);
+	return false;
+      }
+    
+  struct vm_entry* vme = vm_entry_init(((uint8_t *) PHYS_BASE) - PGSIZE, PAGE_ANON, true, NULL, 0, 0, 0);
   
   if(vme == NULL)
   {
 	  palloc_free_page(kpage);
 	  success = false;
   }
+  *esp = PHYS_BASE;
+    }
   return success;
 }
 

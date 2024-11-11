@@ -121,6 +121,7 @@ malloc (size_t size)
 
   lock_acquire (&d->lock);
 
+
   /* If the free list is empty, create a new arena. */
   if (list_empty (&d->free_list))
     {
@@ -232,7 +233,6 @@ free (void *p)
           /* Clear the block to help detect use-after-free bugs. */
           memset (b, 0xcc, d->block_size);
 #endif
-  
           lock_acquire (&d->lock);
 
           /* Add block to free list. */

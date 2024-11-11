@@ -84,6 +84,7 @@ kill (struct intr_frame *f)
      
   /* The interrupt frame's code segment value tells us where the
      exception originated. */
+
   switch (f->cs)
     {
     case SEL_UCSEG:
@@ -100,7 +101,7 @@ kill (struct intr_frame *f)
          may cause kernel exceptions--but they shouldn't arrive
          here.)  Panic the kernel to make the point.  */
       intr_dump_frame (f);
-      PANIC ("Kernel bug - unexpected interrupt in kernel"); 
+      PANIC ("Kernel bug - unexpected interrupt in kernel");
 
     default:
       /* Some other code segment?  Shouldn't happen.  Panic the
@@ -151,23 +152,30 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  /* To implement virtual memory, delete the rest of the function
+ bool loaded = false;
+ /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  if(fault_addr == NULL ||is_kernel_vaddr(fault_addr) || !is_user_vaddr(fault_addr))
-	  kill(f);
+  if(!is_kernel_vaddr(fault_addr) && is_user_vaddr(fault_addr) && not_present)
+  {
+	  struct vm_entry* vme = vm_entry_find(fault_addr);
+	  if(vme != NULL)
+	  {
+		  if(write && !vme->is_write)
+			 loaded = false;
+		  else
+		  	loaded = handle_mm_fault(vme);
 
-  //TODO FRAME ALLOCATION
-  struct vm_entry* vme = vm_entry_find(fault_addr);
-  if(vme == NULL) // THERE IS NOT A VM_ENTRY WITH THIS ADDRESS - ILLEGAL ACCESS
-	kill(f);
+		  if(loaded)
+			  return;
+	  }
+	  else
+		  loaded = false;
+		  
+  }
 
-  if(vme->is_write == false && write)
-	  kill(f);
-
-  if(!handle_mm_fault(vme))
-	  kill(f);
-
+  if(!loaded)
+	  exit_(-1);
 
 }
 

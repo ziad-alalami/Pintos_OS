@@ -30,8 +30,8 @@ struct vm_entry * vm_entry_init(void *vaddr, enum page_type type, bool writeable
 struct vm_entry *vm_entry_find(void *vaddr) {
     struct list_elem *e;
     void* page_addr = pg_round_down(vaddr);
-    struct list vm_list = thread_current()->vm_list;
-    for (e = list_begin(&vm_list); e != list_end(&vm_list); e = list_next(e)) {
+    struct list *vm_list = &thread_current()->vm_list;
+    for (e = list_begin(vm_list); e != list_end(vm_list); e = list_next(e)) {
         struct vm_entry *vme = list_entry(e, struct vm_entry, list_elem);
         if (vme->vaddr == page_addr) {
             return vme;
@@ -40,21 +40,29 @@ struct vm_entry *vm_entry_find(void *vaddr) {
     return NULL;
 }
 void free_vm_list(struct list *vm_list) {
+    if(vm_list == NULL)
+	    return;
+
     struct list_elem *e;
     while (!list_empty(vm_list)){
         e = list_pop_front(vm_list);
         struct vm_entry *vme = list_entry(e, struct vm_entry, list_elem);
-	free(vme->file);
-        free(vme);
+	pagedir_clear_page(thread_current()->pagedir, vme->vaddr);
+	free(vme);
     }
+  
 }
 
 bool load_file(void *kaddr, struct vm_entry * vme)
 {
-        off_t read_bytes = file_read_at(vme->file, kaddr, vme->read_bytes, vme->offset);
+	if(vme->read_bytes == 0)
+		return true;
+
+	file_seek(vme->file, vme->offset);
+        off_t read_bytes = file_read(vme->file, kaddr, vme->read_bytes);
         if(read_bytes != vme->read_bytes)
                 return false;
 
-        memset(kaddr + read_bytes, 0, vme->zero_bytes);
+        memset(kaddr + vme->read_bytes, 0, vme->zero_bytes);
         return true;
 }
