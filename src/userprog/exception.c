@@ -8,12 +8,12 @@
 #include "threads/pte.h"
 #include "userprog/process.h"
 #include "vm/page.h"
+#include "vm/frame.h"
+#include "userprog/pagedir.h"
 /* Number of page faults processed. */
 static long long page_fault_cnt;
-
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
-
 /* Registers handlers for interrupts that can be caused by user
    programs.
 
@@ -130,7 +130,7 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
-
+  static uintptr_t stack_pointer = (uintptr_t) PHYS_BASE - PGSIZE;
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
      data.  It is not necessarily the address of the instruction
@@ -167,10 +167,35 @@ page_fault (struct intr_frame *f)
 		  	loaded = handle_mm_fault(vme);
 
 		  if(loaded)
-			  return;
+		  {
+			  void* phys_addr = pagedir_get_page(thread_current()->pagedir, vme->vaddr);
+
+                          struct page* page = allocate_page_struct(phys_addr,vme);			  ASSERT(page != NULL);
+			  return;		 
+		 }
 	  }
 	  else
+	  {
+		  if(stack_pointer - (uintptr_t) fault_addr < PGSIZE && (uintptr_t)fault_addr > MAXIMUM_STACK_ADDRESS)
+		  {
+			  struct vm_entry* vme = vm_entry_init(stack_pointer - PGSIZE, PAGE_ANON, true, NULL, 0,0,0);
+			  if(vme != NULL)
+			  {
+				loaded = handle_mm_fault(vme);
+				if(loaded)
+                  		{
+                          void* phys_addr = pagedir_get_page(thread_current()->pagedir, vme->vaddr);
+
+                          struct page* page = allocate_page_struct(phys_addr,vme);                        ASSERT(page != NULL);
+                          return;
+                 		}
+
+			  }
+
+
+		  } 
 		  loaded = false;
+	  }
 		  
   }
 

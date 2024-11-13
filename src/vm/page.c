@@ -23,6 +23,8 @@ struct vm_entry * vm_entry_init(void *vaddr, enum page_type type, bool writeable
         vme -> offset = offset;
         vme -> read_bytes = read_bytes;
         vme -> zero_bytes = zero_bytes;
+	vme -> is_swapped = false;
+	vme -> swap_index = -1;
         list_push_back(&cur->vm_list, &vme->list_elem);
         return vme;
 }

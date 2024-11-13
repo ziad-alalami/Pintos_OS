@@ -19,7 +19,8 @@
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
 #include "vm/page.h"
-
+#include "vm/swap.h"
+#include "vm/frame.h"
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -509,7 +510,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
-      struct vm_entry * vme = vm_entry_init(upage, PAGE_ELF, writable,file,ofs, page_read_bytes, page_zero_bytes);
+      struct vm_entry * vme = vm_entry_init(upage, PAGE_ANON, writable,file,ofs, page_read_bytes, page_zero_bytes);
       if(vme == NULL)
       {
 	      return false;
@@ -579,7 +580,26 @@ bool handle_mm_fault(struct vm_entry* vm)
 	void* pg;
 	pg = palloc_get_page(PAL_USER);
 	if(pg == NULL)
-		return false;
+	{
+		struct page* page = get_victim();
+		if(page == NULL)
+			return false;
+		if(pagedir_is_dirty(thread_current()->pagedir, page->vme->vaddr) || page->vme->type == PAGE_ANON)
+		{
+			bool swapped = swap_out(page->vme);
+			if(!swapped) // swap partition is full
+				return false;
+		}
+
+		if(page->vme->type != PAGE_ANON)
+			lru_remove(page);
+		if(page->vme->type == PAGE_ELF)
+			page->vme->type = PAGE_ANON;
+		pagedir_clear_page(thread_current()->pagedir, page->vme->vaddr);
+		
+		pg = palloc_get_page(PAL_USER);
+		ASSERT(pg != NULL); // It should not happen now
+	}
 	if(vm->type == PAGE_FILE)
 	{
 		//TODO RETURN FALSE FOR NOW
@@ -588,12 +608,17 @@ bool handle_mm_fault(struct vm_entry* vm)
 	}
 	else if(vm->type == PAGE_ANON)
 	{
-		return false;
-	}
-	else if(vm->type == PAGE_SWAP)
-	{
-		return false;
-
+		if(!load_file(pg,vm))
+		{
+			palloc_free_page(pg);
+			return false;
+		}
+		if(!install_page(vm->vaddr, pg, vm->is_write))
+		{
+			palloc_free_page(pg);
+			return false;
+		}
+		return true;
 	}
 	else if(vm->type == PAGE_ELF)
 	{

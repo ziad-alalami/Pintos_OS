@@ -10,7 +10,7 @@
 
 
 enum page_type{
-	PAGE_FILE, PAGE_SWAP, PAGE_ELF, PAGE_ANON
+	PAGE_FILE, PAGE_ELF, PAGE_ANON
 };
 
 struct vm_entry{
@@ -22,16 +22,10 @@ struct vm_entry{
 	struct file *file;
 	int offset;
 	uint32_t read_bytes;
-	uint32_t zero_bytes
+	uint32_t zero_bytes;
+	bool is_swapped;
+	int swap_index; // Which bitmap index in swap table contains this page, if none, it is -1
 };
-
-struct page
-{
-	void* phys_address;
-	struct vm_entry *vm_entry;
-	struct thread *thread;
-	list_elem list_elem;
-}
 
 struct vm_entry * vm_entry_init(void *, enum page_type, bool,struct file *, unsigned, uint32_t, uint32_t);
 

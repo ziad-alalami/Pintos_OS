@@ -6,6 +6,7 @@
 #include "devices/timer.h"
 #include "threads/io.h"
 #include "threads/thread.h"
+#include "vm/frame.h"
 #ifdef USERPROG
 #include "userprog/exception.h"
 #endif
@@ -28,6 +29,7 @@ static void print_stats (void);
 void
 shutdown (void)
 {
+  free_lru_list();
   switch (how)
     {
     case SHUTDOWN_POWER_OFF:
