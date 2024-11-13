@@ -25,6 +25,14 @@ struct vm_entry{
 	uint32_t zero_bytes
 };
 
+struct page
+{
+	void* phys_address;
+	struct vm_entry *vm_entry;
+	struct thread *thread;
+	list_elem list_elem;
+}
+
 struct vm_entry * vm_entry_init(void *, enum page_type, bool,struct file *, unsigned, uint32_t, uint32_t);
 
 struct vm_entry *vm_entry_find(void*);

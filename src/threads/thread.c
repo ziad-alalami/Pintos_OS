@@ -41,6 +41,9 @@ static int64_t min_wakeup_tick = INT64_MAX;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+/*List of all pages in use by the system for swapping */
+static struct list lru_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -107,6 +110,7 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
   list_init (&sleep_list);
+  list_init (&lru_list);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
