@@ -178,7 +178,7 @@ page_fault (struct intr_frame *f)
 	  }
 	  else
 	  {
-		  if( (uintptr_t)fault_addr > (uintptr_t) f->esp -32 && (uintptr_t) fault_addr - PGSIZE > MAXIMUM_STACK_ADDRESS)
+		  if( (uintptr_t)fault_addr >= (uintptr_t) f->esp -32 && (uintptr_t) fault_addr - PGSIZE > MAXIMUM_STACK_ADDRESS)
 		  {
 			  struct vm_entry* vme = vm_entry_init(stack_pointer - PGSIZE, PAGE_ANON, true, NULL, 0,0,0);
 			  if(vme != NULL)
