@@ -131,6 +131,8 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   static uintptr_t stack_pointer = (uintptr_t) PHYS_BASE - PGSIZE;
+  static uintptr_t MAXIMUM_STACK_ADDRESS = ((uintptr_t)PHYS_BASE - (8 * 1024 * 1024));
+
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
      data.  It is not necessarily the address of the instruction
@@ -176,7 +178,7 @@ page_fault (struct intr_frame *f)
 	  }
 	  else
 	  {
-		  if(stack_pointer - (uintptr_t) fault_addr < PGSIZE && (uintptr_t)fault_addr > MAXIMUM_STACK_ADDRESS)
+		  if( (uintptr_t)fault_addr > (uintptr_t) f->esp -32 && (uintptr_t) fault_addr - PGSIZE > MAXIMUM_STACK_ADDRESS)
 		  {
 			  struct vm_entry* vme = vm_entry_init(stack_pointer - PGSIZE, PAGE_ANON, true, NULL, 0,0,0);
 			  if(vme != NULL)
@@ -186,6 +188,7 @@ page_fault (struct intr_frame *f)
                   		{
                           void* phys_addr = pagedir_get_page(thread_current()->pagedir, vme->vaddr);
 
+			  stack_pointer -= PGSIZE;
                           struct page* page = allocate_page_struct(phys_addr,vme);                        ASSERT(page != NULL);
                           return;
                  		}
