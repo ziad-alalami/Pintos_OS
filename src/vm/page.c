@@ -4,6 +4,7 @@
 #include "lib/kernel/list.h"
 #include "filesys/file.h"
 #include "page.h"
+#include "threads/malloc.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>

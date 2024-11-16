@@ -2,6 +2,7 @@
 #include "vm/page.h"
 #include "threads/interrupt.h"
 #include "vm/swap.h"
+#include "threads/malloc.h"
 #include <stdbool.h>
 
 static struct block* swap_block; //Points to the swap block that writes to the swap region in memory
