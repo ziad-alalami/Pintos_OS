@@ -124,6 +124,10 @@ struct thread
 
     /*Struct for saving vm_entries for each page*/
     struct list vm_list;
+
+    /* Struct for saving mmap_entries */
+    struct list mmap_list;
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

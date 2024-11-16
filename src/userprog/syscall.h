@@ -21,4 +21,6 @@ void seek(int, unsigned);
 void close(int);
 int open(const char*);
 int pipe(int*);
+int mmap(int, void*);
+void munmap(int);
 #endif /* userprog/syscall.h */

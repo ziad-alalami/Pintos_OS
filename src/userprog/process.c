@@ -86,6 +86,7 @@ start_process (void *command_line_input_)
   struct thread* cur = thread_current();
 
   list_init(&cur->vm_list);
+  list_init(&cur->mmap_list);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -210,6 +211,24 @@ process_exit (void)
   uint32_t *pd;
 
   file_close(cur->running_file);
+  
+  // Free mmap list
+  struct list_elem* e;
+  while (!list_empty(&cur->mmap_list)) {
+    e = list_pop_front(&cur->mmap_list);
+    struct mmap_entry* mme = list_entry(e, struct mmap_entry, list_elem);
+    struct vm_entry* vme = mme->vme;
+
+    file_write_at(mme->file, vme->vaddr, vme->read_bytes, vme->offset);
+    pagedir_clear_page(cur->pagedir, vme->vaddr);
+    
+    list_remove(&vme->list_elem);
+    list_remove(e);
+
+    free(vme);
+    free(mme);
+  }
+
   free_vm_list(&cur->vm_list);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -602,9 +621,17 @@ bool handle_mm_fault(struct vm_entry* vm)
 	}
 	if(vm->type == PAGE_FILE)
 	{
-		//TODO RETURN FALSE FOR NOW
-		return false;
-
+		if(!load_file(pg,vm))
+		{
+			palloc_free_page(pg);
+			return false;
+		}
+		if(!install_page(vm->vaddr, pg, vm->is_write))
+		{
+			palloc_free_page(pg);
+			return false;
+		}
+		return true;
 	}
 	else if(vm->type == PAGE_ANON)
 	{

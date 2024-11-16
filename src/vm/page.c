@@ -62,10 +62,10 @@ bool load_file(void *kaddr, struct vm_entry * vme)
 		return true;
 
 	file_seek(vme->file, vme->offset);
-        off_t read_bytes = file_read(vme->file, kaddr, vme->read_bytes);
-        if(read_bytes != vme->read_bytes)
-                return false;
+    off_t read_bytes = file_read(vme->file, kaddr, vme->read_bytes);
+    if(read_bytes != vme->read_bytes)
+        return false;
 
-        memset(kaddr + vme->read_bytes, 0, vme->zero_bytes);
-        return true;
+    memset(kaddr + vme->read_bytes, 0, vme->zero_bytes);
+    return true;
 }

@@ -27,6 +27,13 @@ struct vm_entry{
 	int swap_index; // Which bitmap index in swap table contains this page, if none, it is -1
 };
 
+struct mmap_entry {
+	struct list_elem list_elem;
+	struct vm_entry* vme;
+	int id;
+	struct file* file;
+};
+
 struct vm_entry * vm_entry_init(void *, enum page_type, bool,struct file *, unsigned, uint32_t, uint32_t);
 
 struct vm_entry *vm_entry_find(void*);
