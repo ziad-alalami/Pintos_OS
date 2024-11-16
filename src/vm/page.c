@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 struct vm_entry * vm_entry_init(void *vaddr, enum page_type type, bool writeable,struct file *file, unsigned offset, uint32_t read_bytes, uint32_t zero_bytes)
 {
         struct vm_entry* vme = malloc(sizeof(struct vm_entry));

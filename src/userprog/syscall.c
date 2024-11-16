@@ -16,6 +16,7 @@
 #include "threads/pipe.h"
 #include "vm/page.h"
 #include "string.h"
+#include "userprog/exception.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -478,7 +479,7 @@ int pipe(int* fds)
 int mmap(int fd, void* addr) {
   if (fd == 0 || fd == 1) return - 1; // Can't mmap stdin or stdout
   if (addr == 0 || (uintptr_t)addr % PGSIZE != 0) return -1; // Addr must be nonzero and page-aligned
-
+  if (addr >= MAX_STACK_ADDRESS || addr < 0x10000000) return -1; // Addr cannot overlap stack, data, or code segments
 
   int size = filesize(fd);
   if (size <= 0) return -1; // Must have positive file size
@@ -486,7 +487,7 @@ int mmap(int fd, void* addr) {
   // Ensure pages are not already taken
   int offset = 0;
   while (offset < size) {
-    if (vm_entry_find(addr + offset != NULL)) return -1;
+    if (vm_entry_find(addr + offset) != NULL) return -1;
     offset += PGSIZE;
   }
 
@@ -509,9 +510,6 @@ int mmap(int fd, void* addr) {
     mme->id = addr;
     list_push_back(&cur->mmap_list, &mme->list_elem);
 
-    // file_read_at(reopened_file, addr + offset, read_bytes, offset);
-    // memset(addr + read_bytes, 0, zero_bytes);
-
     offset += PGSIZE;
   }
 
@@ -531,7 +529,9 @@ void munmap(int mapid) {
 
     if (mme->id == mapid) {
       struct vm_entry* vme = mme->vme;
-      file_write_at(mme->file, vme->vaddr, vme->read_bytes, vme->offset);
+      if (pagedir_is_dirty(cur->pagedir, vme->vaddr)) {
+        file_write_at(mme->file, vme->vaddr, vme->read_bytes, vme->offset);
+      }
       pagedir_clear_page(cur->pagedir, vme->vaddr);
       
       list_remove(&vme->list_elem);

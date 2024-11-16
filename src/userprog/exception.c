@@ -131,7 +131,7 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   static uintptr_t stack_pointer = (uintptr_t) PHYS_BASE - PGSIZE;
-  static uintptr_t MAXIMUM_STACK_ADDRESS = ((uintptr_t)PHYS_BASE - (8 * 1024 * 1024));
+  static uintptr_t MAXIMUM_STACK_ADDRESS = MAX_STACK_ADDRESS;
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to

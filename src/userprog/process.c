@@ -219,7 +219,9 @@ process_exit (void)
     struct mmap_entry* mme = list_entry(e, struct mmap_entry, list_elem);
     struct vm_entry* vme = mme->vme;
 
-    file_write_at(mme->file, vme->vaddr, vme->read_bytes, vme->offset);
+    if (pagedir_is_dirty(cur->pagedir, vme->vaddr)) {
+      file_write_at(mme->file, vme->vaddr, vme->read_bytes, vme->offset);
+    }
     pagedir_clear_page(cur->pagedir, vme->vaddr);
     
     list_remove(&vme->list_elem);
