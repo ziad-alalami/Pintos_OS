@@ -531,7 +531,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
-      struct vm_entry * vme = vm_entry_init(upage, PAGE_ANON, writable,file,ofs, page_read_bytes, page_zero_bytes);
+      struct vm_entry * vme = vm_entry_init(upage, PAGE_ELF, writable,file,ofs, page_read_bytes, page_zero_bytes);
       if(vme == NULL)
       {
 	      return false;
@@ -564,7 +564,7 @@ setup_stack (void **esp)
 	return false;
       }
     
-  struct vm_entry* vme = vm_entry_init(((uint8_t *) PHYS_BASE) - PGSIZE, PAGE_ANON, true, NULL, 0, 0, 0);
+  struct vm_entry* vme = vm_entry_init(((uint8_t *) PHYS_BASE) - PGSIZE, PAGE_ELF, true, NULL, 0, 0, 0);
   
   if(vme == NULL)
   {
@@ -600,26 +600,31 @@ bool handle_mm_fault(struct vm_entry* vm)
 {
 	void* pg;
 	pg = palloc_get_page(PAL_USER);
-	if(pg == NULL)
+	bool is_dirty = false;
+	while(pg == NULL)
 	{
 		struct page* page = get_victim();
 		if(page == NULL)
 			return false;
-		if(pagedir_is_dirty(thread_current()->pagedir, page->vme->vaddr) || page->vme->type == PAGE_ANON)
+
+		is_dirty = pagedir_is_dirty(thread_current()->pagedir, page->vme->vaddr);
+		if( is_dirty || page->vme->type == PAGE_ANON)
 		{
 			bool swapped = swap_out(page->vme);
 			if(!swapped) // swap partition is full
 				return false;
 		}
 
+
 		if(page->vme->type != PAGE_ANON)
-			lru_remove(page);
-		if(page->vme->type == PAGE_ELF)
-			page->vme->type = PAGE_ANON;
+                        remove_page_struct(page);
+
+		if(page->vme->type == PAGE_ELF && is_dirty)
+                        page->vme->type = PAGE_ANON;
+
 		pagedir_clear_page(thread_current()->pagedir, page->vme->vaddr);
-		
 		pg = palloc_get_page(PAL_USER);
-		ASSERT(pg != NULL); // It should not happen now
+		
 	}
 	if(vm->type == PAGE_FILE)
 	{
@@ -637,7 +642,7 @@ bool handle_mm_fault(struct vm_entry* vm)
 	}
 	else if(vm->type == PAGE_ANON)
 	{
-		if(!load_file(pg,vm))
+		if(!load_file(pg, vm))
 		{
 			palloc_free_page(pg);
 			return false;

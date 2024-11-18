@@ -16,7 +16,7 @@ void swap_init(void)
 	ASSERT(swap_block != NULL); // Shouldnt happen
 	block_sector_size = block_size(swap_block);
 	allowed_swap_pages = (int) (block_sector_size / 8);
-	page_bitmap = malloc(sizeof(bool) * allowed_swap_pages);
+	page_bitmap = calloc(allowed_swap_pages, sizeof(bool));
 	
 }
 
@@ -31,7 +31,6 @@ static int get_free_slot_index()
 bool swap_out(struct vm_entry* vme) //Returns false when swap table is full
 {
 	
-	enum intr_level old_level = intr_disable();
 
 	if(vme->type == PAGE_FILE)
 	{
@@ -54,13 +53,11 @@ bool swap_out(struct vm_entry* vme) //Returns false when swap table is full
 	page_bitmap[next_page_index] = true;
 	vme->is_swapped = true;
 	vme->swap_index = next_page_index;
-	intr_set_level(old_level);
 	return true;
 }
 
 void swap_in(struct vm_entry* vme)
 {
-	enum intr_level old_level = intr_disable();
 
 	ASSERT(vme->swap_index != -1);
 	int page_index = vme->swap_index;
@@ -76,7 +73,6 @@ void swap_in(struct vm_entry* vme)
 	page_bitmap[page_index] = false;
 	vme->is_swapped = false;
 	vme->swap_index = -1;
-	intr_set_level(old_level);
 
 }
 
