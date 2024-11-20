@@ -1,5 +1,5 @@
        	       	    +---------------------------+
-		    |		CS 140		|
+		    |		EE 415		|
 		    | PROJECT 3: VIRTUAL MEMORY	|
 		    |	   DESIGN DOCUMENT	|
 		    +---------------------------+
@@ -9,7 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Carter Moore <carter@kaist.ac.kr>
-FirstName LastName <email@domain.example> // TODO @ziad
+Ziad Al Alami <zezolemeilleur@kaist.ac.kr>
 
 ---- PRELIMINARIES ----
 
@@ -28,25 +28,46 @@ FirstName LastName <email@domain.example> // TODO @ziad
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+struct vm_entry{
+        struct list_elem list_elem;
+        enum page_type type;
+        bool is_write;
+        size_t swap_slot;
+        void* vaddr; // The address of the page, and the VPN is found from it
+        struct file *file;
+        int offset;
+        uint32_t read_bytes;
+        uint32_t zero_bytes;
+        bool is_swapped;
+        int swap_index; // Which bitmap index in swap table contains this page, if none, it is -1
+};
+
+
 
 ---- ALGORITHMS ----
 
 >> A2: In a few paragraphs, describe your code for locating the frame,
 >> if any, that contains the data of a given page.
+We add all the page structs to a global linked list LRU list, and then we iterate over the list and check whether the physical address given matches the base physical address of the frame in the LRU list
 
 >> A3: How does your code coordinate accessed and dirty bits between
 >> kernel and user virtual addresses that alias a single frame, or
 >> alternatively how do you avoid the issue?
 
+When accessing the frame from the kernel virtual address, manually check and update the accessed/dirty bits for the corresponding user virtual address.
+This ensures that the kernel and user mappings remain consistent.
 ---- SYNCHRONIZATION ----
 
 >> A4: When two user processes both need a new frame at the same time,
 >> how are races avoided?
+A semaphore called lru_sema is used to ensure synchronization and prevent any race conditions when adding to the list
 
 ---- RATIONALE ----
 
 >> A5: Why did you choose the data structure(s) that you did for
 >> representing virtual-to-physical mappings?
+
+It is not hard to use a list as a data structure and it is easy to add to, remove from, and iterate through.
 
 		       PAGING TO AND FROM DISK
 		       =======================
@@ -56,19 +77,30 @@ FirstName LastName <email@domain.example> // TODO @ziad
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+struct page
+{
+        void* phys_address;
+        struct vm_entry *vme;
+        struct thread *thread;
+        struct list_elem list_elem;
+};
+
 
 ---- ALGORITHMS ----
 
 >> B2: When a frame is required but none is free, some frame must be
 >> evicted.  Describe your code for choosing a frame to evict.
+I use the hand clock algorithm to emitate the LRU algorithm and choose a victim to swap to the SWAP partition in the disk
 
 >> B3: When a process P obtains a frame that was previously used by a
 >> process Q, how do you adjust the page table (and any other data
 >> structures) to reflect the frame Q no longer has?
+I free the entry of the page table that was used by process Q and I free the page memory assigned to it.
 
 >> B4: Explain your heuristic for deciding whether a page fault for an
 >> invalid virtual address should cause the stack to be extended into
 >> the page that faulted.
+I check the fault address and compare it to the esp, if the difference is less than or equal to 32 bytes and the fault address is within user address boundaries, I assume the stack wants to grow and allocate more space (maximum stack space is 8 MB)
 
 ---- SYNCHRONIZATION ----
 
@@ -76,22 +108,28 @@ FirstName LastName <email@domain.example> // TODO @ziad
 >> particular, explain how it prevents deadlock.  (Refer to the
 >> textbook for an explanation of the necessary conditions for
 >> deadlock.)
+Exiting the process instead of using kill prevents a deadlock
+We use semaphores in both the VM_entries and the physical frames struct for the remove, add, iterate operations.
 
 >> B6: A page fault in process P can cause another process Q's frame
 >> to be evicted.  How do you ensure that Q cannot access or modify
 >> the page during the eviction process?  How do you avoid a race
 >> between P evicting Q's frame and Q faulting the page back in?
+First, when P causes a page fault, Q's page gets sent to the swap partition (or simply dropped if it is not ANON page and not written to because it can always be loaded). Then if Q faults the page back in, it will replace another page chosen as a victim by the clock hand algorithm.
 
 >> B7: Suppose a page fault in process P causes a page to be read from
 >> the file system or swap.  How do you ensure that a second process Q
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
+The page will still be read when process Q tries to evict the frame. However, process P still does not add the page to the page table entry until it is ready at the end.
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
 >> in user programs), or do you have a mechanism for "locking" frames
 >> into physical memory, or do you use some other design?  How do you
 >> gracefully handle attempted accesses to invalid virtual addresses?
+
+I check if the pages are ANON files, and if they are, I swap them in from the disk to the memory. If the VA is an invalid VA, the process exits.
 
 ---- RATIONALE ----
 
@@ -101,6 +139,7 @@ FirstName LastName <email@domain.example> // TODO @ziad
 >> possibility for deadlock but allows for high parallelism.  Explain
 >> where your design falls along this continuum and why you chose to
 >> design it this way.
+I only use locks when I want to change any of the VM_entry lists or the physical frames LRU list. This makes it simpler to understand and to use, and is somewhere between using one lock and many locks. I chose it to be this way because it is simple to implement and also quite efficient as in it is only restricted to a few operations.
 
 			 MEMORY MAPPED FILES
 			 ===================
