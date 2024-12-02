@@ -33,6 +33,9 @@ struct buffer_head {
 /* Array of 64 buffer_heads used for the filesys buffer cache */
 struct buffer_head* buffer_heads;
 
+/* Clock hand for clock eviction strategy */
+static int clock_hand = 0;
+
 void write_buffer_to_file(struct buffer_head* buffer_head) {
   block_write (fs_device, buffer_head->sector_idx, buffer_head->data);
 }
@@ -92,10 +95,19 @@ struct buffer_head* find_buffer_head(block_sector_t sector_idx) {
 
 /* Evicts a buffer entry and returns the victim. Before evicton, writes to file if dirty. */
 struct buffer_head* evict_buffer() {
-  struct buffer_head* victim = buffer_heads;
+  struct buffer_head* victim = NULL;
 
-  // TODO update victim finding logic
   // TODO maybe add some synchronization logic around all the buffer_head stuff
+
+  while (victim == NULL) {
+    struct buffer_head* buffer_head = buffer_heads + clock_hand;
+    if (buffer_head->access == true) {
+      victim = buffer_head;
+    } else {
+      buffer_head->access = false;
+    }
+    clock_hand = (clock_hand + 1) % BUFFER_SIZE;
+  }
 
   if (victim->dirty) {
     write_buffer_to_file(victim);
@@ -352,6 +364,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 
       struct buffer_head* buffer_head = find_buffer_head(sector_idx);
       memcpy(buffer_head->data + sector_ofs, buffer + bytes_written, chunk_size);
+      buffer_head->access = true;
       buffer_head->dirty = true;
 
       /* Advance. */
