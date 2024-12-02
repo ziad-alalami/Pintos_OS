@@ -12,6 +12,7 @@ struct block *fs_device;
 
 static void do_format (void);
 
+
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
 void
@@ -23,6 +24,7 @@ filesys_init (bool format)
 
   inode_init ();
   free_map_init ();
+  buffer_init();
 
   if (format) 
     do_format ();
@@ -36,6 +38,8 @@ void
 filesys_done (void) 
 {
   free_map_close ();
+
+  buffer_done();
 }
 
 /* Creates a file named NAME with the given INITIAL_SIZE.

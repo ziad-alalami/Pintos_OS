@@ -6,7 +6,14 @@
 #include "devices/block.h"
 
 struct bitmap;
+struct buffer_head;
 
+void write_buffer_to_file(struct buffer_head* buffer_head);
+void read_buffer_from_file(struct buffer_head* buffer_head);
+void buffer_init(void);
+void buffer_done(void);
+struct buffer_head* find_buffer_head(block_sector_t sector_idx);
+struct buffer_head* evict_buffer(void);
 void inode_init (void);
 bool inode_create (block_sector_t, off_t);
 struct inode *inode_open (block_sector_t);

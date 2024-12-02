@@ -3,6 +3,7 @@
 #include <debug.h>
 #include <round.h>
 #include <string.h>
+#include <stdio.h>
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
@@ -19,6 +20,92 @@ struct inode_disk
     unsigned magic;                     /* Magic number. */
     uint32_t unused[125];               /* Not used. */
   };
+
+struct buffer_head {
+  uint8_t* data; /* Pointer to virtual memory buffer */
+  bool dirty; /* Whether this buffer has been modified since read */
+  bool used; /* Whether this buffer is in use*/
+  bool access; /* Whether this buffer has been accessed recently */
+  block_sector_t sector_idx; /* On disk block sector associated with this buffer */
+};
+
+# define BUFFER_SIZE 64
+/* Array of 64 buffer_heads used for the filesys buffer cache */
+struct buffer_head* buffer_heads;
+
+void write_buffer_to_file(struct buffer_head* buffer_head) {
+  block_write (fs_device, buffer_head->sector_idx, buffer_head->data);
+}
+
+void read_buffer_from_file(struct buffer_head* buffer_head) {
+  block_read (fs_device, buffer_head->sector_idx, buffer_head->data);
+}
+
+/* Initialize the array of buffer_heads and allocate space for buffers */
+void buffer_init() {
+  buffer_heads = malloc(sizeof(struct buffer_head) * BUFFER_SIZE);
+  uint8_t* buffer = malloc(BLOCK_SECTOR_SIZE * BUFFER_SIZE);
+  for (int i = 0; i < BUFFER_SIZE; ++i) {
+    struct buffer_head* buffer_head = buffer_heads + i;
+    buffer_head->access = false;
+    buffer_head->dirty = false;
+    buffer_head->used = false;
+    buffer_head->sector_idx = -1;
+    buffer_head->data = buffer + (i * BLOCK_SECTOR_SIZE);
+  }
+}
+
+/* Deallocate buffer_heads and write anything dirty to file */
+void buffer_done() {
+  for (int i = 0; i < BUFFER_SIZE; ++i) {
+    struct buffer_head* buffer_head = buffer_heads + i;
+    if (buffer_head->dirty) {
+      write_buffer_to_file(buffer_head);
+    }
+  }
+  free(buffer_heads->data);
+  free(buffer_heads);
+}
+
+/* Returns the buffer_head with a matching sector_id. If one does not exist,
+   creates one, evicting an existing buffer_head if they are in use. */
+struct buffer_head* find_buffer_head(block_sector_t sector_idx) {
+  struct buffer_head* victim = NULL;
+  for (int i = 0; i < BUFFER_SIZE; ++i) {
+    struct buffer_head* buffer_head = buffer_heads + i;
+
+    // If we find a match, return it right away
+    if (buffer_head->sector_idx == sector_idx) return buffer_head;
+
+    // If we find an unused, use it as the victim
+    if (!buffer_head->used && victim == NULL) victim = buffer_head;
+  }
+
+  // If necessary, evict an existing entry to use as the victim
+  if (victim == NULL) victim = evict_buffer();
+  victim->used = true;
+  victim->sector_idx = sector_idx;
+  read_buffer_from_file(victim);
+  
+  return victim;
+}
+
+/* Evicts a buffer entry and returns the victim. Before evicton, writes to file if dirty. */
+struct buffer_head* evict_buffer() {
+  struct buffer_head* victim = buffer_heads;
+
+  // TODO update victim finding logic
+  // TODO maybe add some synchronization logic around all the buffer_head stuff
+
+  if (victim->dirty) {
+    write_buffer_to_file(victim);
+  }
+  memset(victim->data, 0, BLOCK_SECTOR_SIZE);
+  victim->dirty = false;
+  victim->access = false;
+
+  return victim;
+}
 
 /* Returns the number of sectors to allocate for an inode SIZE
    bytes long. */
@@ -202,7 +289,6 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 {
   uint8_t *buffer = buffer_;
   off_t bytes_read = 0;
-  uint8_t *bounce = NULL;
 
   while (size > 0) 
     {
@@ -220,31 +306,15 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       if (chunk_size <= 0)
         break;
 
-      if (sector_ofs == 0 && chunk_size == BLOCK_SECTOR_SIZE)
-        {
-          /* Read full sector directly into caller's buffer. */
-          block_read (fs_device, sector_idx, buffer + bytes_read);
-        }
-      else 
-        {
-          /* Read sector into bounce buffer, then partially copy
-             into caller's buffer. */
-          if (bounce == NULL) 
-            {
-              bounce = malloc (BLOCK_SECTOR_SIZE);
-              if (bounce == NULL)
-                break;
-            }
-          block_read (fs_device, sector_idx, bounce);
-          memcpy (buffer + bytes_read, bounce + sector_ofs, chunk_size);
-        }
-      
+      struct buffer_head* buffer_head = find_buffer_head(sector_idx);
+      memcpy(buffer + bytes_read, buffer_head->data + sector_ofs, chunk_size);
+      buffer_head->access = true;
+
       /* Advance. */
       size -= chunk_size;
       offset += chunk_size;
       bytes_read += chunk_size;
     }
-  free (bounce);
 
   return bytes_read;
 }
@@ -260,7 +330,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 {
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
-  uint8_t *bounce = NULL;
 
   if (inode->deny_write_cnt)
     return 0;
@@ -281,38 +350,15 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       if (chunk_size <= 0)
         break;
 
-      if (sector_ofs == 0 && chunk_size == BLOCK_SECTOR_SIZE)
-        {
-          /* Write full sector directly to disk. */
-          block_write (fs_device, sector_idx, buffer + bytes_written);
-        }
-      else 
-        {
-          /* We need a bounce buffer. */
-          if (bounce == NULL) 
-            {
-              bounce = malloc (BLOCK_SECTOR_SIZE);
-              if (bounce == NULL)
-                break;
-            }
-
-          /* If the sector contains data before or after the chunk
-             we're writing, then we need to read in the sector
-             first.  Otherwise we start with a sector of all zeros. */
-          if (sector_ofs > 0 || chunk_size < sector_left) 
-            block_read (fs_device, sector_idx, bounce);
-          else
-            memset (bounce, 0, BLOCK_SECTOR_SIZE);
-          memcpy (bounce + sector_ofs, buffer + bytes_written, chunk_size);
-          block_write (fs_device, sector_idx, bounce);
-        }
+      struct buffer_head* buffer_head = find_buffer_head(sector_idx);
+      memcpy(buffer_head->data + sector_ofs, buffer + bytes_written, chunk_size);
+      buffer_head->dirty = true;
 
       /* Advance. */
       size -= chunk_size;
       offset += chunk_size;
       bytes_written += chunk_size;
     }
-  free (bounce);
 
   return bytes_written;
 }
