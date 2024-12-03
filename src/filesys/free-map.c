@@ -1,5 +1,6 @@
 #include "filesys/free-map.h"
 #include <bitmap.h>
+#include <stdio.h>
 #include <debug.h>
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -28,6 +29,8 @@ bool
 free_map_allocate (size_t cnt, block_sector_t *sectorp)
 {
   block_sector_t sector = bitmap_scan_and_flip (free_map, 0, cnt, false);
+  block_sector_t sectorp_prev = *sectorp;
+  *sectorp = sector;
   if (sector != BITMAP_ERROR
       && free_map_file != NULL
       && !bitmap_write (free_map, free_map_file))
@@ -35,8 +38,8 @@ free_map_allocate (size_t cnt, block_sector_t *sectorp)
       bitmap_set_multiple (free_map, sector, cnt, false); 
       sector = BITMAP_ERROR;
     }
-  if (sector != BITMAP_ERROR)
-    *sectorp = sector;
+  if (sector == BITMAP_ERROR) 
+    *sectorp = sectorp_prev;
   return sector != BITMAP_ERROR;
 }
 
