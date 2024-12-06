@@ -117,6 +117,7 @@ struct thread
     int64_t wakeup_tick;	        /* Tick till wake up.  */
     struct file_descriptor* fdt[64];               /* File descriptor table. */
     struct file* running_file;	        /*The file containing the program/executable */
+    struct dir* curr_dir;		/*Curr directory pointed by this thread*/
     struct process_descriptor* pd;      /* Process descriptor for parent/child relationship */
     struct list children;               /* A list of procescs_descriptor* children */
     /* Shared between thread.c and synch.c. */

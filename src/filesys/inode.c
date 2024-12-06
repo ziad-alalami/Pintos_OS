@@ -11,7 +11,7 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
-#define DIRECT_BLOCK_ENTRIES 124
+#define DIRECT_BLOCK_ENTRIES 123
 
 #define INDIRECT_BLOCK_ENTRIES (BLOCK_SECTOR_SIZE / sizeof(block_sector_t))
 
@@ -26,6 +26,7 @@ struct inode_disk
     block_sector_t direct_map_table[DIRECT_BLOCK_ENTRIES];
     block_sector_t indirect_block_sec;
     block_sector_t double_indirect_block_sec;
+    bool is_dir;
   };
 
 struct buffer_head {
@@ -253,7 +254,7 @@ inode_init (void)
    Returns true if successful.
    Returns false if memory or disk allocation fails. */
 bool
-inode_create (block_sector_t sector, off_t length)
+inode_create (block_sector_t sector, off_t length, bool is_dir)
 {
   struct inode_disk *disk_inode = NULL;
   bool success = false;
@@ -270,14 +271,16 @@ inode_create (block_sector_t sector, off_t length)
       size_t sectors = bytes_to_sectors (length);
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
+      disk_inode->is_dir = is_dir;
       // if (free_map_allocate (sectors, &disk_inode->start)) 
       //   {
+     //   {
       //     block_write (fs_device, sector, disk_inode);
       //     if (sectors > 0) 
       //       {
       //         static char zeros[BLOCK_SECTOR_SIZE];
       //         size_t i;
-              
+
       //         for (i = 0; i < sectors; i++) 
       //           block_write (fs_device, disk_inode->start + i, zeros);
       //       }
@@ -289,7 +292,6 @@ inode_create (block_sector_t sector, off_t length)
     }
   return success;
 }
-
 /* Reads an inode from SECTOR
    and returns a `struct inode' that contains it.
    Returns a null pointer if memory allocation fails. */
@@ -535,4 +537,10 @@ off_t
 inode_length (const struct inode *inode)
 {
   return inode->data.length;
+}
+
+bool
+inode_is_dir(struct inode *inode_)
+{
+        return inode_->data.is_dir;
 }

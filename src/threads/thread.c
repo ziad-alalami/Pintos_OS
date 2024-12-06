@@ -412,6 +412,8 @@ thread_exit (void)
     free(fd);
   }
 
+  dir_close(cur->curr_dir);
+
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */ 
@@ -595,7 +597,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->pd = NULL; // Will be initialized in thread_create
   t->running_file = NULL;
   memset(t->fdt, 0, sizeof(t->fdt));
-
+  t->curr_dir = NULL;
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
