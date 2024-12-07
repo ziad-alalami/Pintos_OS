@@ -234,3 +234,8 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
     }
   return false;
 }
+
+bool dir_is_root(struct dir* dir)
+{
+	return inode_get_inumber(dir_get_inode(dir)) == ROOT_DIR_SECTOR; 
+}

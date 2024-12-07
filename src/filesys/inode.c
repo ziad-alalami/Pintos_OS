@@ -11,7 +11,7 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
-#define DIRECT_BLOCK_ENTRIES 123
+#define DIRECT_BLOCK_ENTRIES 122
 
 #define INDIRECT_BLOCK_ENTRIES (BLOCK_SECTOR_SIZE / sizeof(block_sector_t))
 
@@ -27,6 +27,7 @@ struct inode_disk
     block_sector_t indirect_block_sec;
     block_sector_t double_indirect_block_sec;
     bool is_dir;
+    block_sector_t parent;
   };
 
 struct buffer_head {
@@ -272,6 +273,7 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
       disk_inode->is_dir = is_dir;
+      disk_inode->parent = ROOT_DIR_SECTOR;
       // if (free_map_allocate (sectors, &disk_inode->start)) 
       //   {
      //   {
@@ -521,6 +523,7 @@ inode_deny_write (struct inode *inode)
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
 }
 
+
 /* Re-enables writes to INODE.
    Must be called once by each inode opener who has called
    inode_deny_write() on the inode, before closing the inode. */
@@ -543,4 +546,21 @@ bool
 inode_is_dir(struct inode *inode_)
 {
         return inode_->data.is_dir;
+}
+
+bool inode_set_parent(block_sector_t sector, block_sector_t parent)
+{
+	struct inode* inode_sec = inode_open(sector);
+	if(inode_sec == NULL)
+		return false;
+	inode_sec->data.parent = parent;
+	inode_close(inode_sec);
+	return true;
+}
+struct inode* inode_get_parent(struct inode* inode)
+{
+	if(inode == NULL || &(inode->data) == NULL)
+		return NULL;
+	struct inode* parent = inode_open(inode->data.parent);
+	return parent;
 }

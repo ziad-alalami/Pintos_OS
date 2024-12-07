@@ -14,7 +14,8 @@
 #include "userprog/process.h"
 #include "threads/malloc.h"
 #include "threads/pipe.h"
-
+#include "filesys/inode.h"
+#include "filesys/directory.h"
 static void syscall_handler (struct intr_frame *);
 
 static struct lock filesys_lock;
@@ -143,6 +144,48 @@ syscall_handler (struct intr_frame *f)
       f->eax = pipe(fds);
       break;
       }
+    case SYS_CHDIR:
+      {
+	      if(!validate_pointer(addr1)) exit_(-1);
+	      const char *dir = *(char **)(addr1);
+	     f->eax = chdir(dir);
+	    break; 
+      }
+       case SYS_MKDIR:
+      {
+              if(!validate_pointer(addr1)) exit_(-1);
+              const char *dir = *(char **)(addr1);
+             f->eax = mkdir(dir);
+            break;
+      }
+          case SYS_READDIR:
+      {
+              void* addr2 = addr1 + sizeof(int);
+      	  if (!validate_pointer(addr1) || !validate_pointer(addr2)) exit_(-1);
+	      int fd = *(int *) (addr1);
+              const char *name = *(char **)(addr2);
+             f->eax = readdir(fd, name);
+            break;
+      }
+       case SYS_ISDIR:
+      {
+              if(!validate_pointer(addr1)) exit_(-1);
+              int dir = *(int*)(addr1);
+             f->eax = isdir(dir);
+            break;
+      }
+      case SYS_INUMBER:
+      {
+              if(!validate_pointer(addr1)) exit_(-1);
+              int fd = *(int*)(addr1);
+             f->eax = inumber(fd);
+            break;
+      }
+
+
+
+
+
   }
 }
 
@@ -344,7 +387,7 @@ bool create(const char* file, unsigned initial_size)
 		exit_(-1); //Malicious pointer
 
 	lock_acquire(&filesys_lock);
-	bool created = filesys_create(file, initial_size);
+	bool created = filesys_create(file, initial_size, false);
 	lock_release(&filesys_lock);
 
 	return created;
@@ -455,4 +498,98 @@ int pipe(int* fds)
   cur->fdt[writer_fd] = writer;
 
 	return 0;
+}
+
+bool chdir(const char* path)
+{
+	char* name = path_to_name(path);
+	struct dir* dir = resolve_path(path);
+	struct inode* inode = NULL;
+
+	if(dir == NULL)
+	{
+		free(name);
+		return false;
+	}
+	else if(strcmp(name,"..") == 0)
+	{
+		inode = inode_get_parent(dir_get_inode(dir));
+		if(inode == NULL) // no parent... called at root?
+		{
+			free(name);
+			return false;
+		}
+	}
+
+	else if((strcmp(name, ".") == 0) || (strlen(name) == 0 && dir_is_root(dir)))
+	{
+		thread_current()->curr_dir = dir;
+		free(name);
+		return true;
+	}
+	else 
+		dir_lookup(dir, name, &inode);
+
+	dir_close(dir);
+
+	dir = dir_open(inode);
+
+	if(dir == NULL) //that path does not exist or it is a normal file?
+	{
+		free(name);
+		return false;
+	}
+	dir_close(thread_current()->curr_dir);
+	thread_current()->curr_dir = dir;
+	free(name);
+	return true;
+}
+
+bool mkdir(const char* path)
+{
+	bool success = filesys_create(path, 0, true);
+	return success;
+}
+
+bool isdir(int fd)
+{
+        if(fd < 0 || fd > 63)
+                exit_(-1);
+        struct file* cur_file = thread_current()->fdt[fd];
+        if(cur_file == NULL) return false;
+        struct inode *inode = file_get_inode(cur_file);
+        if(inode == NULL || !inode_is_dir(inode)) return false;
+        return true;
+}
+
+
+
+bool readdir(int fd, char* path)
+{
+	if(fd < 0 || fd > 63)
+	       exit_(-1);
+	struct file* cur_file = thread_current()->fdt[fd];
+	if(cur_file == NULL) return false;
+	
+	struct inode* inode = file_get_inode(cur_file);
+	if(inode == NULL || !inode_is_dir(inode)) return false;
+
+	//It must be a dir then...
+	struct dir* dir = dir_open(inode);
+	if(!dir_readdir(dir, path)) return false;
+	return true;
+}
+
+int inumber(int fd)
+{
+	if(fd < 0 || fd > 63)
+		exit_(-1);
+	struct file* cur_file = thread_current()->fdt[fd];
+	if(cur_file == NULL) return -1; //Should we return -1 or just exit?
+	struct inode* inode = file_get_inode(cur_file);
+	if(inode == NULL) return -1;
+
+	block_sector_t inode_number = inode_get_inumber(inode);
+	return inode_number;
+
 }

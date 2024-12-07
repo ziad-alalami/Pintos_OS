@@ -21,4 +21,9 @@ void seek(int, unsigned);
 void close(int);
 int open(const char*);
 int pipe(int*);
+bool chdir(const char*);
+bool mkdir(const char*);
+bool readdir(int, char*);
+bool isdir(int);
+int inumber(int);
 #endif /* userprog/syscall.h */

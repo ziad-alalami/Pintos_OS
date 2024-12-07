@@ -57,8 +57,7 @@ path_to_name(const char* path_name)
   memcpy(name, prev, strlen(prev) + 1);
   return name;
 }
-
-static struct dir* resolve_path(const char* path_name)
+struct dir* resolve_path(const char* path_name)
 {
   int length = strlen(path_name);
   char path[length + 1];
@@ -102,19 +101,20 @@ static struct dir* resolve_path(const char* path_name)
    Fails if a file named NAME already exists,
    or if internal memory allocation fails. */
 bool
-filesys_create (const char *name, off_t initial_size) 
+filesys_create (const char *name, off_t initial_size, bool is_dir) 
 {
   block_sector_t inode_sector = 0;
   char* file_name = path_to_name(name);
   struct dir *dir = resolve_path(name);
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size, false)
+                  && inode_create (inode_sector, initial_size, is_dir)
                   && dir_add (dir, name, inode_sector));
   if (!success && inode_sector != 0) 
   {
     free(file_name);
     free_map_release (inode_sector, 1);
+    dir_close(dir);
     return false;
   }
   free(file_name);
