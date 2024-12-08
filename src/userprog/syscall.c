@@ -502,10 +502,12 @@ int pipe(int* fds)
 
 bool chdir(const char* path)
 {
+	if(path == NULL)
+		return false;
+
 	char* name = path_to_name(path);
 	struct dir* dir = resolve_path(path);
 	struct inode* inode = NULL;
-
 	if(dir == NULL)
 	{
 		free(name);

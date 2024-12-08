@@ -7,6 +7,7 @@
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
+#include "threads/synch.h"
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
@@ -145,6 +146,7 @@ struct inode
     bool removed;                       /* True if deleted, false otherwise. */
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
+    struct lock lock;
   };
 
 static void get_disk_inode(struct inode* inode) {
@@ -326,6 +328,7 @@ inode_open (block_sector_t sector)
   inode->open_cnt = 1;
   inode->deny_write_cnt = 0;
   inode->removed = false;
+  lock_init(&inode->lock);
   block_read (fs_device, inode->sector, &inode->data);
   return inode;
 }
@@ -563,4 +566,14 @@ struct inode* inode_get_parent(struct inode* inode)
 		return NULL;
 	struct inode* parent = inode_open(inode->data.parent);
 	return parent;
+}
+
+void inode_lock(const struct inode* inode)
+{
+	lock_acquire(&inode->lock);
+}
+
+void inode_unlock(const struct inode* inode)
+{
+	lock_release(&inode->lock);
 }

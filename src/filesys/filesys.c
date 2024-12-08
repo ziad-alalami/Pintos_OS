@@ -64,10 +64,10 @@ struct dir* resolve_path(const char* path_name)
   memcpy(path, path_name, length + 1);
 
   struct dir* dir;
-  if(path[0] == '/' || !thread_current()->curr_dir)
+  if(path[0] == '/' || thread_current()->curr_dir == NULL)
     dir = dir_open_root();
   else
-    dir = dir_reopen(thread_current()->curr_dir);
+    dir = thread_current()->curr_dir;
   
   char *cur, *ptr, *prev;
   prev = strtok_r(path, "/", &ptr);
@@ -106,17 +106,17 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   block_sector_t inode_sector = 0;
   char* file_name = path_to_name(name);
   struct dir *dir = resolve_path(name);
-  bool success = (dir != NULL
+  bool success = false;
+
+  if(strcmp(file_name, "..") != 0 && strcmp(file_name, "."))
+  {
+ 		success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, is_dir)
-                  && dir_add (dir, name, inode_sector));
-  if (!success && inode_sector != 0) 
-  {
-    free(file_name);
-    free_map_release (inode_sector, 1);
-    dir_close(dir);
-    return false;
+                  && dir_add (dir,file_name, inode_sector));
   }
+  if (!success && inode_sector != 0) 
+    free_map_release (inode_sector, 1);
   free(file_name);
   dir_close (dir);
 
@@ -129,26 +129,40 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
    Fails if no file named NAME exists,
    or if an internal memory allocation fails. */
 struct file *filesys_open(const char *name) {
+	if(strlen(name) == 0)
+		return NULL;
+
     char *file_name = path_to_name(name);
     struct dir *dir = resolve_path(name);
     struct inode *inode = NULL;
-
-    
     if (dir != NULL && file_name != NULL && strlen(file_name) > 0) {
+	    if(strcmp(file_name, "..") == 0)
+	    {
+		    inode = inode_get_parent(dir_get_inode(dir));
+		    if(inode == NULL)
+		    {
+			    free(file_name);
+			    return NULL;
+		    }
+	    }
+	    else if(strcmp(file_name, ".") == 0 || (dir_is_root(dir) && strlen(file_name) == 0))
+	    {
+		    free(file_name);
+		    return (struct file*) dir;
+	    }
         
-        dir_lookup(dir, file_name, &inode);
-	free(file_name);
-        dir_close(dir); 
-    } else {
-        if (dir != NULL) dir_close(dir);
-	free(file_name);	
-        return NULL;
-    }
+        	else dir_lookup(dir, file_name, &inode);
+    } 
+    dir_close(dir);
+    free(file_name);
+
+    if(inode == NULL)
+	    return NULL;
 
    
-    if (inode != NULL && inode_is_dir(inode)) {
-        inode_close(inode);
-        return NULL; 
+    if (inode_is_dir(inode))
+    {
+	    return (struct file*) dir_open(inode);
     }
 
     return file_open(inode); 
