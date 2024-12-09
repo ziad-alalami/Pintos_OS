@@ -5,7 +5,7 @@
 #include "filesys/filesys.h"
 #include "filesys/inode.h"
 #include "threads/malloc.h"
-
+#include "threads/thread.h"
 /* A directory. */
 struct dir 
   {
@@ -207,9 +207,12 @@ dir_remove (struct dir *dir, const char *name)
 
   if(inode_is_removed(inode))
 	  goto done;
+  if(thread_current()->curr_dir != NULL && inode_is_dir(inode) && inode == dir_get_inode(thread_current()->curr_dir->inode))
 
-  if (inode_is_dir(inode) && inode_get_open_cnt(inode) > 1)
-     goto done;
+	  goto done;
+
+// if (inode_is_dir(inode) && inode_get_open_cnt(inode) > 1)
+    // goto done;
 
   // deleting .. should be included here because if the dir is not empty then deleting .. 
   if(inode_is_dir(inode) && !dir_is_empty(inode))

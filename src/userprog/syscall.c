@@ -252,6 +252,8 @@ int write(int fd, const void *buffer, unsigned size) {
 
   int result = 0;
   if (file_desc->type == FILE) {
+    if(inode_is_dir(file_get_inode(file_desc->file)))
+	    return -1;
     lock_acquire(&filesys_lock);
     result = file_write(file_desc->file, buffer, size);
     lock_release(&filesys_lock);
@@ -327,6 +329,8 @@ int read(int fd, const void *buffer, unsigned size)
 
   int result = 0;
   if (file_desc->type == FILE) {
+    if(inode_is_dir(file_get_inode(file_desc->file)))
+	    return -1;
     lock_acquire(&filesys_lock);
     result = file_read(file_desc->file, buffer, size);
     lock_release(&filesys_lock);
@@ -534,6 +538,12 @@ bool chdir(const char* path)
 
 	dir_close(dir);
 
+	if(inode == NULL)
+	{
+		free(name);
+		return false;
+	}
+
 	dir = dir_open(inode);
 
 	if(dir == NULL) //that path does not exist or it is a normal file?
@@ -578,8 +588,7 @@ bool readdir(int fd, char* path)
 
 	//It must be a dir then...
 	struct dir* dir = dir_open(inode);
-	if(!dir_readdir(dir, path)) return false;
-	return true;
+	return dir_readdir(dir, path);
 }
 
 int inumber(int fd)
