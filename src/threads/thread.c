@@ -222,7 +222,7 @@ thread_create (const char *name, int priority,
   sema_init(&pd->exec_sema, 0);
   sema_init(&pd->wait_sema, 0);
   t->pd = pd;
-
+  t->curr_dir = parent->curr_dir;
   list_push_back(&parent->children, &pd->elem);
 
   copy_fdt(parent, t);

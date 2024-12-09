@@ -67,10 +67,12 @@ struct dir* resolve_path(const char* path_name)
   if(path[0] == '/' || thread_current()->curr_dir == NULL)
     dir = dir_open_root();
   else
-    dir = thread_current()->curr_dir;
+    dir = dir_reopen(thread_current()->curr_dir);
   
   char *cur, *ptr, *prev;
   prev = strtok_r(path, "/", &ptr);
+
+
   for(cur = strtok_r(NULL, "/", &ptr); cur != NULL;
     prev = cur, cur = strtok_r(NULL, "/", &ptr))
   {
@@ -108,7 +110,13 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   struct dir *dir = resolve_path(name);
   bool success = false;
 
-  if(strcmp(file_name, "..") != 0 && strcmp(file_name, "."))
+  if(strcmp(file_name, "") == 0)
+	  return false;
+  if(dir == NULL || inode_is_removed(dir_get_inode(dir)) )
+	  return false;
+
+  
+  if(strcmp(file_name, "..") != 0 && strcmp(file_name, ".") != 0)
   {
  		success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
@@ -151,12 +159,14 @@ struct file *filesys_open(const char *name) {
 		    return (struct file*) dir;
 	    }
         
-        	else dir_lookup(dir, file_name, &inode);
+        	else {dir_lookup(dir, file_name, &inode);}
     } 
     dir_close(dir);
     free(file_name);
 
     if(inode == NULL)
+	    return NULL;
+    if(inode_is_removed(inode))
 	    return NULL;
 
    
@@ -175,40 +185,25 @@ struct file *filesys_open(const char *name) {
 bool
 filesys_remove (const char *name)
 {
+  if(strlen(name) == 1 && name == '/')
+	  return false;
+
   char* file_name = path_to_name(name);
   struct dir *dir = resolve_path(name);
   struct inode* file_inode = NULL;
 
   if (dir == NULL)
           return false;
+  if(!dir_lookup(dir, file_name, &file_inode))
+	  return false;
 
-  if(dir_lookup(dir, file_name,&file_inode))
-  {
-          if(!inode_is_dir(file_inode))
-          {
-		  bool success = dir_remove(dir, file_name);
-                  free(file_name);
-		  dir_close(dir);
-		  return success;
-          }
-  	  char name[NAME_MAX + 1];
-          //It must be a directory now....
-          struct dir* remove_dir = dir_open(file_inode);
-          while(dir_readdir(remove_dir, name))
-          {
-                  if(strcmp(name, ".") != 0 && strcmp(name, "..") != 0)
-                  {
-                          dir_close(dir);
-                          dir_close(remove_dir);
-			  free(file_name);
-                          return false;
-                  }
-          }
-          dir_remove(dir, file_name);
-          dir_close(dir);
-	  free(file_name);
-          return true;
-  }
+  if(dir_remove(dir, file_name))
+	  return true;
+
+  dir_close(dir);
+  free(file_name);
+  return false;
+
 }
 
 /* Formats the file system. */

@@ -195,6 +195,7 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
   inode_lock(dir_get_inode(dir));
+
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
     goto done;
@@ -203,6 +204,23 @@ dir_remove (struct dir *dir, const char *name)
   inode = inode_open (e.inode_sector);
   if (inode == NULL)
     goto done;
+
+  if(inode_is_removed(inode))
+	  goto done;
+
+  if (inode_is_dir(inode) && inode_get_open_cnt(inode) > 1)
+     goto done;
+
+  // deleting .. should be included here because if the dir is not empty then deleting .. 
+  if(inode_is_dir(inode) && !dir_is_empty(inode))
+    goto done;
+
+  if(inode_is_dir(inode))
+  {
+	  struct dir* rem_dir = dir_open(inode);
+	  if(dir_is_root(rem_dir))
+		  goto done;
+  }
 
   /* Erase directory entry. */
   e.in_use = false;
@@ -243,4 +261,18 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 bool dir_is_root(struct dir* dir)
 {
 	return inode_get_inumber(dir_get_inode(dir)) == ROOT_DIR_SECTOR; 
+}
+
+bool dir_is_empty (struct inode *inode)
+{
+  struct dir_entry entry;
+  off_t pos = 0;
+
+  while (inode_read_at (inode, &entry, sizeof entry, pos) == sizeof entry)
+    {
+      pos += sizeof entry;
+      if (entry.in_use)
+          return false;
+    }
+  return true;
 }

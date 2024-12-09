@@ -372,7 +372,7 @@ inode_close (struct inode *inode)
   /* Ignore null pointer. */
   if (inode == NULL)
     return;
-
+  struct inode_disk disk_inode;
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
     {
@@ -383,7 +383,7 @@ inode_close (struct inode *inode)
       if (inode->removed) 
         {
           // Free direct table
-          struct inode_disk disk_inode = inode->data; 
+          disk_inode = inode->data; 
           for (int i = 0; i < DIRECT_BLOCK_ENTRIES; ++i) {
             if (disk_inode.direct_map_table[i] != 0) {
               free_map_release (disk_inode.direct_map_table[i], 1);
@@ -410,9 +410,13 @@ inode_close (struct inode *inode)
 
           // Free disk inode
           // TODO maybe some concurrency issues here, not sure where to put this
-          write_disk_inode(inode);
           free_map_release (inode->sector, 1);
         }
+      else
+      {
+	      
+	      write_disk_inode(inode);
+      }
 
       free (inode); 
     }
@@ -576,4 +580,12 @@ void inode_lock(const struct inode* inode)
 void inode_unlock(const struct inode* inode)
 {
 	lock_release(&inode->lock);
+}
+int inode_get_open_cnt(struct inode* inode)
+{
+	return inode->open_cnt;
+}
+bool inode_is_removed(struct inode* inode)
+{
+	return inode->removed;
 }

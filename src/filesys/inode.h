@@ -32,4 +32,6 @@ bool inode_set_parent(block_sector_t, block_sector_t);
 struct inode* inode_get_parent(struct inode*);
 void inode_lock(const struct inode*);
 void inode_unlock(const struct inode*);
+int inode_get_open_cnt(struct inode*);
+bool inode_is_removed(struct inode*);
 #endif /* filesys/inode.h */
